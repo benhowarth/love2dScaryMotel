@@ -51,7 +51,7 @@ mortalBottom[3]=love.graphics.newImage("res/mortalBottom3.png")
 mortalBottom[4]=love.graphics.newImage("res/mortalBottom4.png")
 mortalBottom[5]=love.graphics.newImage("res/mortalBottom5.png")
 Mortal=Class{
-  init=function(self,id,name)
+  init=function(self,id,name,floorId)
     self.id=id
     self.name=name
     self.reviewFrags={}
@@ -62,6 +62,12 @@ Mortal=Class{
     self.state=-1
     self.stay=(math.random()*300)+100
     self.stayTimer=0
+    self.floorId=floorId
+    self.roomId=floors[floorId]:getVacantRoom()
+    if(self.roomId~=nil)then
+      floors[self.floorId].rooms[self.roomId]:assignMortal(self.id)
+    end
+    --love.window.showMessageBox(self.name, string.format("Floor %d\nRoom %d",self.floorId,self.roomId), "info", true)
     self.top=math.ceil(math.random()*#mortalTop)
     self.bottom=math.ceil(math.random()*#mortalBottom)
   end;
@@ -87,11 +93,11 @@ Mortal=Class{
       end
     end
   end;
-  draw=function(self)
+  draw=function(self,xOffset,yOffset)
     if(self.state~=2 and self.state~=0)then
-      love.graphics.draw(mortalBase, self.x, self.y, 0,5,5,5,5)
-      love.graphics.draw(mortalTop[self.top], self.x, self.y, 0,5,5,5,5)
-      love.graphics.draw(mortalBottom[self.bottom], self.x, self.y, 0,5,5,5,5)
+      love.graphics.draw(mortalBase, self.x+xOffset, self.y+yOffset, 0,5,5,5,5)
+      love.graphics.draw(mortalTop[self.top], self.x+xOffset, self.y+yOffset, 0,5,5,5,5)
+      love.graphics.draw(mortalBottom[self.bottom], self.x+xOffset, self.y+yOffset, 0,5,5,5,5)
       --love.graphics.rectangle("fill", self.x, self.y, 30, 30)
     end
   end;
@@ -103,6 +109,7 @@ Mortal=Class{
       for i=1,fragNumber do
         T.setVar("frag"..Inspect(i),self.reviewFrags[i].text)
         --self.reviewString=self.reviewString.." "..self.reviewFrags[i].text
+        --love.window.showMessageBox("rating", Inspect(self).."\n"..Inspect(self.reviewFrags[i]), "info", true)
         self.rating=((self.rating*(i-1))+self.reviewFrags[i].rating)/i
       end
       --love.window.showMessageBox(Inspect(fragNumber), Inspect(T.variables), "info", true)
@@ -133,12 +140,15 @@ Mortal=Class{
       self:addReviewFrag(ReviewFragment(fault.text,fault.rating,1))
     end
     money=money+self.stay*0.05
+    floors[self.floorId].rooms[self.roomId]:deassignMortal()
   	addToNewsFeed(self:getFinalReview(3))
   end;
 }
 
 newMortal=function()
-  mortals[#mortals+1]=Mortal(#mortals+1,T.parse("#firstName# #lastName#"))
+  if(getAvailableFloor()~=nil and floors[getAvailableFloor()]:getVacantRoom()~=nil)then
+    mortals[#mortals+1]=Mortal(#mortals+1,T.parse("#firstName# #lastName#"),getAvailableFloor())
+  end
 end;
 
 howManyMortalsStaying=function()

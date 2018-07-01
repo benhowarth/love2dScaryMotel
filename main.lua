@@ -16,6 +16,7 @@ function love.load()
 
 	upgradesYOffset=0
 	newsFeedYOffset=0
+	motelYOffset=0
 
 	T=require 'notTracery'
 	require 'mortals'
@@ -67,7 +68,7 @@ function love.update(dt)
 			if(mortalInterval<mortalIntervalMin)then mortalInterval=mortalIntervalMin end
 		end
 	end
-end
+end;
 
 function love.draw()
 	love.graphics.setShader()
@@ -99,18 +100,16 @@ function love.draw()
 	 love.graphics.rectangle("line", newsFeedWidth+30, 10, window.w-newsFeedWidth-40, window.h/2-10)
 
    local stencil = function()
-     love.graphics.rectangle("fill", newsFeedWidth+30, 10, window.w-newsFeedWidth-40, window.h/2-10)
+     love.graphics.rectangle("fill", newsFeedWidth+30, 60+fontCharHeight+5, window.w-newsFeedWidth-40, window.h/2-85)
    end
 
    love.graphics.stencil(stencil,"replace",1)
    love.graphics.setStencilTest("greater", 0)
 	 --love.window.showMessageBox("motel size", string.format("%d x %d",window.w-newsFeedWidth-40, window.h/2-10), "info", true)
 	 --love.graphics.setColor(255, 0, 0, 255)
-	 for k=1,#mortals do
-		 mortals[k]:draw()
-	 end
+
 	 love.graphics.setColor(255, 255, 255, 255)
-	 M.print(newsFeedWidth+30+30, 10+110,5)
+	 M.print(newsFeedWidth+100, 230+motelYOffset,5)
 
 
 	 love.graphics.setColor(255, 255, 255, 150)
@@ -126,22 +125,21 @@ function love.draw()
     love.graphics.setStencilTest("greater", 0)
 
 		--stuff appear flashlight
-		--love.graphics.rectangle("fill", newsFeedWidth+30, 10,50,50)
 
 
     love.graphics.stencil(stencil,"invert",1)
 
 		--stuff disappear in flashlight
-	  if(isBought("Investigate people hanging around"))then
-	    love.graphics.draw(M.imgs.shadowPerson,newsFeedWidth+40,80,0,2,2)
-	  end
 
 
 		love.graphics.setStencilTest()
 	 --love.graphics.print("Time "..Inspect(time2), newsFeedWidth+40, 20)
+	 for k=1,#mortals do
+		 mortals[k]:draw(0,motelYOffset)
+	 end
 	 love.graphics.print(getDateTextFull(time2), newsFeedWidth+40, 20)
 	 love.graphics.print(string.format("$%.2f",money), newsFeedWidth+40, 40)
-	 love.graphics.print("Number of occupants "..Inspect(howManyMortalsStaying()), newsFeedWidth+40, 60)
+	 love.graphics.print(string.format("Number of occupants %d of %d",howManyMortalsStaying(),getRoomNo()), newsFeedWidth+40, 60)
 
 
 	 --love.graphics.setStencilTest()
@@ -197,25 +195,47 @@ function love.keypressed(key, scancode, isrepeat)
 	elseif(key=="w")then
 		newMortal()
 	elseif(key=="up")then
-		--upgrades
-		if(inBox(mouseX,mouseY,newsFeedWidth+30, window.h/2+10, window.w-newsFeedWidth-40, window.h/2-20))then
-			upgradesYOffset=clamp(upgradesYOffset+10,upgradesYOffset+10,0)
-		--newsfeed
-		elseif(inBox(mouseX,mouseY,10,30,newsFeedWidth,window.h-20))then
-			newsFeedYOffset=clamp(newsFeedYOffset+10,newsFeedYOffset+10,0)
-		end
+			checkScrollUp()
 	elseif(key=="down")then
-		--upgrades
-		if(inBox(mouseX,mouseY,newsFeedWidth+30, window.h/2+10, window.w-newsFeedWidth-40, window.h/2-20))then
-			upgradesYOffset=clamp(upgradesYOffset-10,upgradesYOffset-10,0)
-		--newsfeed
-		elseif(inBox(mouseX,mouseY,10,30,newsFeedWidth,window.h-20))then
-			newsFeedYOffset=clamp(newsFeedYOffset-10,newsFeedYOffset-10,0)
-		end
+ 		 checkScrollDown()
 	end
 end
 function love.keyreleased(key)
 	if(key=="q")then
 		inspectPlayer=false
+	end
+end
+
+function love.wheelmoved(x, y)
+	 if y > 0 then
+		 checkScrollUp()
+
+	 elseif y < 0 then
+		 checkScrollDown()
+
+	 end
+end
+
+checkScrollDown=function()
+	--upgrades
+	 if(inBox(mouseX,mouseY,newsFeedWidth+30, window.h/2+10, window.w-newsFeedWidth-40, window.h/2-20))then
+		 upgradesYOffset=clamp(upgradesYOffset-10,upgradesYOffset-10,0)
+	 --newsfeed
+	 elseif(inBox(mouseX,mouseY,10,30,newsFeedWidth,window.h-20))then
+		 newsFeedYOffset=clamp(newsFeedYOffset-10,newsFeedYOffset-10,0)
+	 elseif(inBox(mouseX,mouseY,newsFeedWidth+30, 60+fontCharHeight+5, window.w-newsFeedWidth-40, window.h/2-85))then
+		 motelYOffset=clamp(motelYOffset-10,0,motelYOffset-10)
+	 end
+end
+
+checkScrollUp=function()
+	--upgrades
+	if(inBox(mouseX,mouseY,newsFeedWidth+30, window.h/2+10, window.w-newsFeedWidth-40, window.h/2-20))then
+		upgradesYOffset=clamp(upgradesYOffset+10,upgradesYOffset+10,0)
+	--newsfeed
+	elseif(inBox(mouseX,mouseY,10,30,newsFeedWidth,window.h-20))then
+		newsFeedYOffset=clamp(newsFeedYOffset+10,newsFeedYOffset+10,0)
+	elseif(inBox(mouseX,mouseY,newsFeedWidth+30, 60+fontCharHeight+5, window.w-newsFeedWidth-40, window.h/2-85))then
+		motelYOffset=clamp(motelYOffset+10,0,#floors*floors[1].height)
 	end
 end
