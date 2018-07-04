@@ -1,4 +1,5 @@
-money=0
+--money=0
+money=100000
 problems={}
 Problem=Class{
   init=function(self,id,name,active,newsFeedLenToAvailable,updateMS,preFixUpdate,preFixDraw,preFixFragTable,preFixRating,postFixUpdate,postFixDraw,postFixFragTable,postFixRating)
@@ -199,32 +200,24 @@ T.addGrammarTable("very",{"very","extremely"})
 T.addGrammarTable("dirty",{"dirty","filthy"})
 T.addGrammarTable("veryDirty",{"#dirty#","#very# #dirty#"})
 
+--Problem
 --(name,active,updateMS,preFixUpdate,preFixDraw,preFixFragTable,preFixRating,postFixUpdate,postFixDraw,postFixFragTable,postFixRating)
-newProblem("Dirty",true,nil,100,nil,nil,{"It was #veryDirty#"},2,nil,nil,{"It was clean"},4)
---name,cost,newsFeedLenToAvailable,problemsItFixes,problemsItCauses)
-newUpgrade("Clean",10,0,{"Dirty"},nil)
---newUpgrade("Clean",10,1,{"It was #veryDirty#"},0)
---newUpgrade("Stairs",10,1,{"I couldn't get to my room"},0)
+--upgrade
+--(name,cost,newsFeedLenToAvailable,problemsItFixes,problemsItCauses)
 
-newProblem("No Stairs",true,nil,100,nil,nil,{"I couldn't get to my room"},1,nil,function(self,x,y,w) love.graphics.draw(M.imgs.stairs,x,y,0,w,w) end,{"It had stairs"},3)
-newUpgrade("Stairs",10,0,{"No Stairs"},nil)
---newUpgrade("Railing",10,1,{"There was no railing"},0)
 
-newProblem("No Railing",true,nil,100,nil,nil,{"There was no railing"},1,nil,function(self,x,y,w) love.graphics.draw(M.imgs.railing,x,y,0,w,w) end,{"The railing was nice"},3)
-newUpgrade("Railing",10,0,{"No Railing"},nil)
---newUpgrade("Sign",10,1,{"I had trouble finding the place"},0)
 
 newProblem("No Sign",true,nil,100,nil,nil,{"I had trouble finding the place"},1,nil,
 function(self,x,y,w)
   if(math.random()>0.9)then
-    love.graphics.draw(M.imgs.sign2,x-(w*6),y-(floors[1].height*(#floors-1))-(w*7),0,w,w)
+    love.graphics.draw(M.imgs.sign2,x-100,y-(floors[1].height*(#floors-1))-(w*7),0,w,w)
   else
-    love.graphics.draw(M.imgs.sign1,x-(w*6),y-(floors[1].height*(#floors-1))-(w*7),0,w,w)
+    love.graphics.draw(M.imgs.sign1,x-100,y-(floors[1].height*(#floors-1))-(w*7),0,w,w)
   end
 end,{"It had a sign"},3)
 newUpgrade("Sign",10,0,{"No Sign"},nil)
 
-newProblem("No Vending Machine",true,nil,100,nil,nil,{"There was nothing to eat"},1,nil,function(self,x,y,w) love.graphics.draw(M.imgs.vendingMachine,x,y,0,w,w) end,{"It had a vending machine"},3)
+newProblem("No Vending Machine",true,nil,100,nil,nil,{"There was nothing to eat"},1,nil,function(self,x,y,w) love.graphics.draw(M.imgs.vendingMachine,x,y,0,w,w,M.imgs.vendingMachine:getWidth()/2,M.imgs.vendingMachine:getHeight()/2) end,{"It had a vending machine"},3)
 newUpgrade("Vending Machine",10,0,{"No Vending Machine"},nil)
 --newUpgrade("Vending Machine",10,1,{"There was nothing to eat"},5)
 
@@ -282,13 +275,16 @@ M.roofBottomHeight=20
 M.roofTopHeight=10
 M.print=function(x,y,w)
   --love.graphics.draw(M.imgs.main,x,y,0,w,w)
+  love.graphics.setColor(0, 0, 0, 255)
+  love.graphics.rectangle("fill",x-100,y+floors[1].height-floors[1].lineWidth*2,window.w/2,floors[1].height)
+  love.graphics.setColor(255, 255, 255, 255)
   for f=1,#floors do
     --floors[f]:print(x,y-((f-1)*w*M.imgs.floor:getHeight()),w)
     floors[f]:print(x,y-((f-1)*w*10)-(f*floors[f].lineWidth*2),w)
   end
   love.graphics.rectangle("fill",x-M.roofBottomWidthExtra/2,y-((#floors-1)*w*10)-(#floors*floors[#floors].lineWidth*2)-M.roofBottomHeight,floors[#floors].width+M.roofBottomWidthExtra,M.roofBottomHeight)
   love.graphics.rectangle("fill",x,y-((#floors-1)*w*10)-(#floors*floors[#floors].lineWidth*2)-M.roofBottomHeight-M.roofTopHeight,floors[#floors].width,M.roofTopHeight)
-  drawProblems(x,y,w)
+  drawProblems(x+130,y-10,w)
 end
 
 alphabet="abcdefghijklmnopqrstuvwxyz"
@@ -358,7 +354,10 @@ Floor=Class{
     love.graphics.setLineWidth(self.lineWidth)
 
     love.graphics.rectangle("line", x, y, self.width, self.height)
+    love.graphics.setColor(0,0,0,255)
+    love.graphics.rectangle("fill", x, y, self.width, self.height)
     love.graphics.setLineWidth(1)
+    love.graphics.setColor(255,255,255,255)
     for r=1,#self.rooms do
       --self.rooms[r]:print(x+((r-1)*w*M.imgs.room:getWidth()),y,w)
       self.rooms[r]:print(x,y,w)
@@ -367,6 +366,7 @@ Floor=Class{
 }
 newFloor=function(roomNo)
   floors[#floors+1]=Floor(#floors+1,roomNo)
+
 end
 getAvailableFloor=function()
   for f=1,#floors do
@@ -382,10 +382,32 @@ getRoomNo=function()
   end
   return totalRooms
 end
+isRoomAccessible=function(floor)
+  local curFloor=floor-1
+  while(curFloor>1 and isBought("Stairs to F"..Inspect(curFloor)))do
+    curFloor=curFloor-1
+  end
+  if(curFloor==1 or curFloor==0)then
+    return true
+  else
+    return false
+  end
+end
 
 newFloor(4)
 
 addFloor=function(cost,roomNo)
+  local floorNo=#floors
+  newProblem(string.format("Dirty F%d",#floors),true,nil,100,nil,nil,{"It was #veryDirty#"},2,nil,nil,{"It was clean"},4)
+  newUpgrade(string.format("Clean F%d",#floors),10,0,{string.format("Dirty F%d",#floors)},nil)
+  if(#floors>=2)then
+    newProblem(string.format("No Stairs F%d",#floors),true,nil,100,nil,nil,{"I couldn't get to my room"},1,nil,function(self,x,y,w) local curFloorY=y-((floors[floorNo].height-2)*(floorNo-2)) love.graphics.draw(M.imgs.stairs,x,curFloorY,0,w,w,M.imgs.stairs:getWidth()/2,M.imgs.stairs:getHeight()/2) end,{"It had stairs"},3)
+    newUpgrade(string.format("Stairs to F%d",#floors),10,0,{string.format("Dirty F%d",#floors)},nil)
+
+    newProblem(string.format("No Railing F%d",#floors),true,nil,100,nil,nil,{"There was no railing"},1,nil,function(self,x,y,w) local curFloorY=y-((floors[floorNo].height-2)*(floorNo-2)) love.graphics.draw(M.imgs.railing,x,curFloorY,0,w,w,M.imgs.railing:getWidth()/2,M.imgs.railing:getHeight()/2) end,{"The railing was nice"},3)
+    newUpgrade(string.format("Railing F%d",#floors),10,0,{string.format("No Railing F%d",#floors)},nil)
+  end
+
   newUpgradeSpecial(string.format("Build Floor %d",#floors+1),cost,0,nil,nil,function() newFloor(roomNo) addFloor(cost*5,roomNo) end)
 end
 addFloor(20,4)

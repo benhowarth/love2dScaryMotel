@@ -5,7 +5,6 @@ function love.load()
 	love.graphics.setDefaultFilter("nearest", "nearest")
 	require 'setup'
 	--love.mouse.setVisible(false)
-	time2=0
 	mouseX=0
 	mouseY=0
 	mortalInterval=400
@@ -20,6 +19,7 @@ function love.load()
 
 	T=require 'notTracery'
 	require 'mortals'
+	require 'time'
 	require 'motel'
 	require 'ui'
 
@@ -62,9 +62,10 @@ function love.update(dt)
 		for k=1,#mortals do
 			mortals[k]:update()
 		end
-		if(everyMS(mortalInterval))then
+		--if(everyMS(mortalInterval))then
+		if(everyMS(10))then
 			newMortal()
-			mortalInterval=mortalInterval*0.99
+			mortalInterval=mortalInterval*0.9
 			if(mortalInterval<mortalIntervalMin)then mortalInterval=mortalIntervalMin end
 		end
 	end
@@ -73,9 +74,7 @@ end;
 function love.draw()
 	love.graphics.setShader()
 	--love.graphics.setCanvas(canvas)
-
-
-	 love.graphics.setColor(0,0,0,255)
+	love.graphics.setColor(0,0,0,255)
 	 love.graphics.rectangle("fill", 0, 0, window.w, window.h)
 
 	 love.graphics.setColor(255,255,255,255)
@@ -98,13 +97,15 @@ function love.draw()
 	 love.graphics.setFont(fontSpooky)
 
 	 love.graphics.rectangle("line", newsFeedWidth+30, 10, window.w-newsFeedWidth-40, window.h/2-10)
+ 	 love.graphics.setColor(255,255,255,(55*(getHours(time2)/24)))
+ 	 love.graphics.rectangle("fill", newsFeedWidth+30, 10, window.w-newsFeedWidth-40, window.h/2-10)
 
-   local stencil = function()
-     love.graphics.rectangle("fill", newsFeedWidth+30, 60+fontCharHeight+5, window.w-newsFeedWidth-40, window.h/2-85)
-   end
+	 local stencil = function()
+	   love.graphics.rectangle("fill", newsFeedWidth+30, 60+fontCharHeight+5, window.w-newsFeedWidth-40, window.h/2-85)
+	 end
 
-   love.graphics.stencil(stencil,"replace",1)
-   love.graphics.setStencilTest("greater", 0)
+	 love.graphics.stencil(stencil,"replace",1)
+	 love.graphics.setStencilTest("greater", 0)
 	 --love.window.showMessageBox("motel size", string.format("%d x %d",window.w-newsFeedWidth-40, window.h/2-10), "info", true)
 	 --love.graphics.setColor(255, 0, 0, 255)
 
@@ -117,17 +118,17 @@ function love.draw()
 	 love.graphics.setColor(255, 255, 255, 255)
 
 
-    local stencil = function()
-      love.graphics.circle("fill", mouseX,mouseY,30, 40)
-    end
+	  local stencil = function()
+	    love.graphics.circle("fill", mouseX,mouseY,30, 40)
+	  end
 
-    love.graphics.stencil(stencil,"replace",1)
-    love.graphics.setStencilTest("greater", 0)
+	  love.graphics.stencil(stencil,"replace",1)
+	  love.graphics.setStencilTest("greater", 0)
 
 		--stuff appear flashlight
 
 
-    love.graphics.stencil(stencil,"invert",1)
+	  love.graphics.stencil(stencil,"invert",1)
 
 		--stuff disappear in flashlight
 
@@ -142,6 +143,8 @@ function love.draw()
 	 love.graphics.print(string.format("Number of occupants %d of %d",howManyMortalsStaying(),getRoomNo()), newsFeedWidth+40, 60)
 
 
+
+	love.graphics.rectangle("line", newsFeedWidth+30, 10, window.w-newsFeedWidth-40, window.h/2-10)
 	 --love.graphics.setStencilTest()
 
 	 love.graphics.rectangle("line", newsFeedWidth+30, window.h/2+10, window.w-newsFeedWidth-40, window.h/2-20)
