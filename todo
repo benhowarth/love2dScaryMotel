@@ -13,3 +13,9 @@ add moon/sun day night cycle
 
 stairs check access with isRoomAccessible
 check for problems with whole motel then also floors
+fix sign display
+have mortals move to room properly
+change mortal states to string? (look up enums) x
+
+display rooms in review
+fix newsfeed lag after a while (only show sublist)

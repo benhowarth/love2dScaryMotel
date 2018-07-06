@@ -7,6 +7,10 @@ function clamp(x,min,max)
 	elseif(x<min) then res=min end
 	return res
 end;
+
+function within(a,b,amount)
+	return a<b+amount and a>b-amount
+end;
 function sqr(x)
 	return x*x
 end;

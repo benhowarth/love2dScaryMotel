@@ -30,7 +30,7 @@ Review=Class{
     love.graphics.print(getDateText(self.date),x+10,y+reviewPicHeight+40)
 
     if(h<reviewPicWidth+fH+50)then h=reviewPicWidth+fH+50 end
-    love.graphics.print("-"..mortals[self.mortalId].name,x+reviewPicWidth+20,y+h+fH)
+    love.graphics.print(string.format("-%s (%d/%d)",mortals[self.mortalId].name,mortals[self.mortalId].floorId,mortals[self.mortalId].roomId),x+reviewPicWidth+20,y+h+fH)
 
     h=h+fH*3
 
@@ -58,14 +58,16 @@ Mortal=Class{
     self.reviewString=""
     self.rating=0
     self.x=newsFeedWidth+10
-    self.y=230
-    self.state=-1
+    self.y=270
+    self.state="ENTERING"
+    self.direction=1
     self.stay=(math.random()*300)+100
     self.stayTimer=0
     self.floorId=floorId
     self.roomId=floors[floorId]:getVacantRoom()
     if(self.roomId~=nil)then
       floors[self.floorId].rooms[self.roomId]:assignMortal(self.id)
+      self.target={x=floors[self.floorId].rooms[self.roomId].x+(newsFeedWidth+100)+roomWidth/2,y=floors[self.floorId].rooms[self.roomId].y}
     end
     --love.window.showMessageBox(self.name, string.format("Floor %d\nRoom %d",self.floorId,self.roomId), "info", true)
     self.top=math.ceil(math.random()*#mortalTop)
@@ -73,20 +75,30 @@ Mortal=Class{
   end;
   update=function(self)
     --entering
-    if(self.state==-1)then
-      self.x=self.x+3
-      if(self.x>newsFeedWidth+80)then
-        self.state=0
+    if(self.state=="ENTERING")then
+      if(isRoomAccessible(self.floorId)) then
+        --love.window.showMessageBox(self.name, Inspect(self.x).." vs "..Inspect(self.target.x).."\n"..Inspect(within(self.x,self.target.x,10)), "info", true)
+        if(within(self.x,self.target.x,10) and within(self.y,self.target.y,10))then
+        --if(self.x>newsFeedWidth+80)then
+          self.state="STAYING"
+        elseif(within(self.x,(newsFeedWidth+100)+250,10))then
+          self.y=self.y-60
+          self.direction=self.direction*-1
+        else
+            self.x=self.x+(self.direction*3)
+        end
+      else
+        --love.window.showMessageBox(self.name, "Room inaccessible", "info", true)
       end
     --staying
-    elseif(self.state==0)then
+    elseif(self.state=="STAYING")then
       self.stayTimer=self.stayTimer+1
       if(self.stayTimer>self.stay)then
         self.x=window.w-100
-        self.state=1
+        self.state="LEAVING"
       end
     --leaving
-    elseif(self.state==1)then
+    elseif(self.state=="LEAVING")then
       self.x=self.x+4
       if(self.x>window.w)then
         self:leave()
@@ -94,7 +106,7 @@ Mortal=Class{
     end
   end;
   draw=function(self,xOffset,yOffset)
-    if(self.state~=2 and self.state~=0)then
+    if(self.state~="LEFT" and self.state~="STAYING")then
       love.graphics.draw(mortalBase, self.x+xOffset, self.y+yOffset, 0,5,5,5,5)
       love.graphics.draw(mortalTop[self.top], self.x+xOffset, self.y+yOffset, 0,5,5,5,5)
       love.graphics.draw(mortalBottom[self.bottom], self.x+xOffset, self.y+yOffset, 0,5,5,5,5)
@@ -129,7 +141,7 @@ Mortal=Class{
       self.reviewFrags[#self.reviewFrags+1]=frag
   end;
   leave=function(self)
-    self.state=2
+    self.state="LEFT"
 
     faults=getPossibleFaults()
     iLim=#faults
@@ -154,7 +166,7 @@ end;
 howManyMortalsStaying=function()
   mortalNum=0
   for h=1,#mortals do
-    if(mortals[h].state==0)then mortalNum=mortalNum+1 end
+    if(mortals[h].state=="STAYING")then mortalNum=mortalNum+1 end
   end
   return mortalNum
 end

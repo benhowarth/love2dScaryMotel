@@ -210,9 +210,9 @@ T.addGrammarTable("veryDirty",{"#dirty#","#very# #dirty#"})
 newProblem("No Sign",true,nil,100,nil,nil,{"I had trouble finding the place"},1,nil,
 function(self,x,y,w)
   if(math.random()>0.9)then
-    love.graphics.draw(M.imgs.sign2,x-100,y-(floors[1].height*(#floors-1))-(w*7),0,w,w)
+    love.graphics.draw(M.imgs.sign2,x,y-((floors[1].height+(-1*floors[1].lineWidth))*(#floors-1))+50,0,w,w,M.imgs.sign2:getWidth()/2,M.imgs.sign2:getHeight()/2)
   else
-    love.graphics.draw(M.imgs.sign1,x-100,y-(floors[1].height*(#floors-1))-(w*7),0,w,w)
+    love.graphics.draw(M.imgs.sign1,x,y-((floors[1].height+(-1*floors[1].lineWidth))*(#floors-1))+50,0,w,w,M.imgs.sign1:getWidth()/2,M.imgs.sign1:getHeight()/2)
   end
 end,{"It had a sign"},3)
 newUpgrade("Sign",10,0,{"No Sign"},nil)
@@ -387,7 +387,13 @@ isRoomAccessible=function(floor)
   while(curFloor>1 and isBought("Stairs to F"..Inspect(curFloor)))do
     curFloor=curFloor-1
   end
-  if(curFloor==1 or curFloor==0)then
+  if(curFloor==1)then
+    if(isBought("Stairs to F2"))then
+      return true
+    else
+      return false
+    end
+  elseif(curFloor==0)then
     return true
   else
     return false
@@ -402,7 +408,7 @@ addFloor=function(cost,roomNo)
   newUpgrade(string.format("Clean F%d",#floors),10,0,{string.format("Dirty F%d",#floors)},nil)
   if(#floors>=2)then
     newProblem(string.format("No Stairs F%d",#floors),true,nil,100,nil,nil,{"I couldn't get to my room"},1,nil,function(self,x,y,w) local curFloorY=y-((floors[floorNo].height-2)*(floorNo-2)) love.graphics.draw(M.imgs.stairs,x,curFloorY,0,w,w,M.imgs.stairs:getWidth()/2,M.imgs.stairs:getHeight()/2) end,{"It had stairs"},3)
-    newUpgrade(string.format("Stairs to F%d",#floors),10,0,{string.format("Dirty F%d",#floors)},nil)
+    newUpgrade(string.format("Stairs to F%d",#floors),10,0,{string.format("No Stairs F%d",#floors)},nil)
 
     newProblem(string.format("No Railing F%d",#floors),true,nil,100,nil,nil,{"There was no railing"},1,nil,function(self,x,y,w) local curFloorY=y-((floors[floorNo].height-2)*(floorNo-2)) love.graphics.draw(M.imgs.railing,x,curFloorY,0,w,w,M.imgs.railing:getWidth()/2,M.imgs.railing:getHeight()/2) end,{"The railing was nice"},3)
     newUpgrade(string.format("Railing F%d",#floors),10,0,{string.format("No Railing F%d",#floors)},nil)
