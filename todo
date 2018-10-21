@@ -3,6 +3,7 @@ have mortals move from room properly
 stop mortals sometimes flying into the sky from stairs(move interval problem?) ITS TO DO WITH THE Y OFFSET
 fix stair access
 
+change window icon?
 
 fix upgrade chain (problems for hotdogs appearing before vending machine bought)
 fix review redacting lines to see a bit of the text
@@ -17,7 +18,9 @@ add to cats mechanic (make affect review/have em block things)
 add running costs?
 why hotdog cart sometimes appear not ready
 
-add AC
+add mound image
+
+add AC/slime
 add cleaning upgrade?
 
 fix rating for noisey (and all? something to do with positive negative?)
@@ -27,7 +30,7 @@ change stats to stars?
 gomissing do different reviews
 
 make shadowsymax and xmax update with motel (or print/update differently)
-make shadows look better
+make shadows look better/not look like dissapear so fast
 
 why is statue appearing before buying upgrade?
 

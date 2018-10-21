@@ -123,6 +123,25 @@ getRatingText=function(rating)
   return rateText
 end;
 
+function drawClock(x,y,rad,hour,min,printAMPM)
+  if(printAMPM==true)then
+    love.graphics.setColor(255, 255, 255)
+    local AMPM="AM"
+    if(math.fmod(hour,24)>=12)then AMPM="PM" end
+    love.graphics.print(AMPM,x-14,y+rad/2)
+  end
+  love.graphics.setLineWidth(5)
+  local hourAng=-((hour/12)*2*math.pi)-math.pi
+  love.graphics.setColor(255,0,0,255)
+  love.graphics.line(x, y, x+rad*math.sin(hourAng),y+rad*math.cos(hourAng))
+  local minAng=-((min/60)*2*math.pi)-math.pi
+  love.graphics.setColor(255,255,255)
+  love.graphics.line(x, y, x+rad*0.5*math.sin(minAng),y+rad*0.5*math.cos(minAng))
+  love.graphics.circle("line",x,y,rad)
+  love.graphics.setLineWidth(1)
+  love.graphics.setColor(255,255,255)
+end;
+
 newsStoriesToAdd={}
 checkNewsStories=function()
   for l=1,#newsStoriesToAdd do

@@ -2,10 +2,11 @@ require 'mortalGrammars'
 mortals={}
 missingMortalsNo=0
 ReviewFragment=Class{
-  init=function(self,text,rating,weight)
+  init=function(self,text,rating,weight,problemToNotify)
     self.text=text
     self.rating=rating
     self.weight=weight
+    self.problemToNotify=problemToNotify
   end;
 }
 reviewPicWidth=60
@@ -175,7 +176,8 @@ Mortal=Class{
     self.state="WAITING"
     self.direction=1
     --self.stay=(math.random()*300)+100
-    self.stay=(math.random()*800)+200
+    --self.stay=(math.random()*800)+200
+    self.stay=(math.random()*1600)+500
     self.stayTimer=0
     self.floorId=nil
     self.roomId=nil
@@ -293,6 +295,10 @@ Mortal=Class{
     if(#self.reviewFragsNeg~=0 or #self.reviewFragsPos~=0)then
       self.rating=0
       for i=1,negNum do
+        if(self.reviewFragsNeg[i].problemToNotify~=nil) then
+          --msg(problems[self.reviewFragsNeg[i].problemToNotify].name.." appeared",Inspect(problems[self.reviewFragsNeg[i].problemToNotify]))
+          problems[self.reviewFragsNeg[i].problemToNotify].appeared=true
+        end
         T.setVar("negfrag"..Inspect(i),self.reviewFragsNeg[i].text)
         self.rating=((self.rating*(i-1))+self.reviewFragsNeg[i].rating)/i
       end
@@ -342,13 +348,15 @@ Mortal=Class{
     for i=1,fLim do
       fault=choosePop(faults)
       --love.window.showMessageBox("fault", Inspect(fault), "info", true)
-      self:addReviewFrag(ReviewFragment(fault.text,fault.rating,1),"neg")
+      local problemIdToNotify=nil
+      if(fault.id~=nil)then if(problems[fault.id].appeared==false)then problemIdToNotify=fault.id end end
+      self:addReviewFrag(ReviewFragment(fault.text,fault.rating,1,problemIdToNotify),"neg")
     end
     pLim=clamp(#positives,0,3)
     for i=1,pLim do
       positive=choosePop(positives)
       --love.window.showMessageBox("fault", Inspect(fault), "info", true)
-      self:addReviewFrag(ReviewFragment(positive.text,positive.rating,1),"pos")
+      self:addReviewFrag(ReviewFragment(positive.text,positive.rating,1,nil),"pos")
     end
 
 

@@ -5,6 +5,7 @@ function love.load()
 	love.graphics.setDefaultFilter("nearest", "nearest")
 	require 'setup'
 	debug=false
+	inGame=false
 
 	--love.mouse.setVisible(false)
 	mouseX=0
@@ -15,11 +16,12 @@ function love.load()
 
 	mortalTimeMin=300
 	mortalTimeMax=600
-	mortalTimeMin=60
-	mortalTimeMax=180
+	mortalTimeMin=1
+	mortalTimeMax=6
 	--mortalTime=love.math.random(mortalTimeMin,mortalTimeMax)
 	--mortalTime=love.math.random(200,400)
 	mortalTime=love.math.random(60,110)
+	mortalTime=10
 	paused=false
 	pauseIcon="❚❚"
 	inspectPlayer=true
@@ -42,6 +44,7 @@ function love.load()
 	require 'time'
 	require 'motel'
 	require 'ui'
+	require 'menu'
 
   fontDefault=love.graphics.newFont("res/Arial-Unicode-Regular.ttf",15)
   fontSpooky=love.graphics.newFont("res/SpencersSpookyFontMONO.ttf",25)
@@ -62,8 +65,8 @@ function love.load()
 	customersYPos=window.h/2+60
 	customersYOffset=0
 
-	customerLim=5
-	customerLim=20
+	customerLim=8
+	--customerLim=20
 	cleanSpeed=0.01
 
 	newsFeedYOffset=0
@@ -91,40 +94,43 @@ function everyMS(ms)
 end
 
 function love.update(dt)
-	if(paused==false)then
-		time=time+dt
-		if(debug==true)then time2=time2+1
-		else time2=time2+0.1 end
-		u=getUpgrades()
-		for k=1,#u do
-			u[k]:update()
-		end
-		for k=1,#mortals do
-			mortals[k]:update()
-		end
-		--if(everyMS(mortalInterval))then
-		--love.window.showMessageBox("time2 vs mortaltime", Inspect(time2).."|"..Inspect(mortalTime), "info", true)
-		if(math.floor(time2)==math.floor(mortalTime))then
-			newMortal()
-			--mortalInterval=mortalInterval*0.9
-			--if(mortalInterval<mortalIntervalMin)then mortalInterval=mortalIntervalMin end
-
-			if(debug==true)then
-				mortalTimeMin=300
-				mortalTimeMax=600
-			else
-				mortalTimeMin=60
-				mortalTimeMax=180
+	if(inGame)then
+		if(paused==false)then
+			time=time+dt
+			if(debug==true)then time2=time2+1
+			else time2=time2+0.1 end
+			u=getUpgrades()
+			for k=1,#u do
+				u[k]:update()
 			end
-			mortalTime=time2+love.math.random(mortalTimeMin,mortalTimeMax)
+			for k=1,#mortals do
+				mortals[k]:update()
+			end
+			--if(everyMS(mortalInterval))then
+			--love.window.showMessageBox("time2 vs mortaltime", Inspect(time2).."|"..Inspect(mortalTime), "info", true)
+			if(math.floor(time2)==math.floor(mortalTime))then
+				newMortal()
+				--mortalInterval=mortalInterval*0.9
+				--if(mortalInterval<mortalIntervalMin)then mortalInterval=mortalIntervalMin end
+
+				if(debug==true)then
+					mortalTimeMin=300
+					mortalTimeMax=600
+				end
+				mortalTime=time2+love.math.random(mortalTimeMin,mortalTimeMax)
+			end
+			updateProblems()
 		end
-		updateProblems()
+	else
+		menu.update()
 	end
 end;
 
 function love.draw()
+	if(inGame)then
 	love.graphics.setShader()
-	--love.graphics.setCanvas(canvas)
+	love.graphics.setShader(pixelShader)
+	love.graphics.setCanvas(canvas)
 	love.graphics.setColor(0,0,0,255)
 	love.graphics.rectangle("fill", 0, 0, window.w, window.h)
 
@@ -251,6 +257,9 @@ function love.draw()
 		 mortals[k]:draw(0,motelYOffset)
 	 end
 	 love.graphics.print(getDateTextFull(time2), newsFeedWidth+40, 20)
+
+	 drawClock(window.w-130-50, 45, 30, getHours(time2),math.fmod(getHours(time2),1)*60,false)
+
 	 if(debug)then
 	 	love.graphics.print(string.format("$%.2f (%f evil)",money,evilPerc), newsFeedWidth+40, 40)
 	else
@@ -278,11 +287,16 @@ function love.draw()
 
 
 
-	 love.graphics.setColor(255,255,255,255)
-	 love.graphics.rectangle("line", window.w-65,15,50,50)
 	 love.graphics.setFont(fontDefault)
+	 love.graphics.setColor(255,255,255,255)
+
+	 love.graphics.rectangle("line", window.w-65,15,50,50)
 	 love.graphics.print(pauseIcon,window.w-65+20,15+15)
+
 	 love.graphics.setFont(fontSpooky)
+
+	 love.graphics.rectangle("line", window.w-65-50-15,15,50,50)
+	 love.graphics.print("M",window.w-65-50-15+20,15+15)
 
 	 if(cursorState=="kill")then
 		 love.graphics.setColor(255, 0, 0, 255)
@@ -292,26 +306,62 @@ function love.draw()
 
 
 	drawMenuBoxesQueued()
-	--love.graphics.setCanvas()
 
 	--experimentShader:send("t",time)
-	--love.graphics.setShader(experimentShader)
-	--love.graphics.draw(canvas)
 	love.graphics.setFont(fontDefault)
 	if(debug==true)then love.graphics.print("time to next mortal: "..mortalTime.." vs t: "..time2.."\n"..shadowYMax.."\n"..Inspect(shadows),1200,100) end
 
 	love.graphics.setFont(fontSpooky)
+
+
+
+	love.graphics.setCanvas()
+	love.graphics.setShader(pixelShader)
+	love.graphics.draw(canvas)
+	else
+		love.graphics.setShader(pixelShader)
+		vingetteShader:send("w",window.w)
+		vingetteShader:send("h",window.h)
+		vingetteShader:send("x",mouseX)
+		vingetteShader:send("y",mouseY)
+		love.graphics.setShader(vingetteShader)
+		love.graphics.setCanvas(canvas)
+		menu.draw()
+		love.graphics.setCanvas()
+		love.graphics.setShader(pixelShader)
+		love.graphics.draw(canvas)
+	end
 end
 
 cursorState=nil
 function love.mousepressed(x, y, button, isTouch)
-	if(button==1)then
-		checkUpgradesCol(upgradesXPos,upgradesYPos,upgradesYOffset,upgradesWidth, window.h/2-40,fontCharWidth,fontCharHeight,mouseX,mouseY)
-		checkCustomersCol(customersXPos,customersYPos,customersYOffset,upgradesWidth, window.h/2-40,fontCharWidth,fontCharHeight,mouseX,mouseY)
+	if(inGame)then
+		if(button==1)then
+			checkUpgradesCol(upgradesXPos,upgradesYPos,upgradesYOffset,upgradesWidth, window.h/2-40,fontCharWidth,fontCharHeight,mouseX,mouseY)
+			checkCustomersCol(customersXPos,customersYPos,customersYOffset,upgradesWidth, window.h/2-40,fontCharWidth,fontCharHeight,mouseX,mouseY)
 
-		if(inBox(mouseX,mouseY,window.w-65,15,50,50))then
-			if(paused==true)then paused=false pauseIcon="❚❚" else paused=true pauseIcon="▶" end
+			if(inBox(mouseX,mouseY,window.w-65,15,50,50))then
+				if(paused==true)then paused=false pauseIcon="❚❚" else paused=true pauseIcon="▶" end
+			end
+			if(inBox(mouseX,mouseY,window.w-65-50-15,15,50,50))then
+				if(paused==true)then paused=false pauseIcon="❚❚" else paused=true pauseIcon="▶" end
+				inGame=false
+			end
 		end
+
+	else
+		--menu
+
+		menu.onClick()
+	end
+end
+
+function love.mousereleased(x, y, button, isTouch)
+	if(inGame)then
+	else
+		--menu
+
+		menu.onUnclick()
 	end
 end
 
@@ -321,39 +371,53 @@ function love.mousemoved(x, y, dx, dy)
 end
 
 function love.keypressed(key, scancode, isrepeat)
-	if(key=="r")then
-		love.load()
-	elseif(key=="a")then
-		evilPercAdd(0.1)
-	elseif(key=="q")then
-		inspectPlayer=true
-		if(debug==false) then debug=true money=money+1000000 else debug=false end
-	elseif(key=="1")then
-		newMortal("normal")
-	elseif(key=="2")then
-		newMortal("cop")
-	elseif(key=="3")then
-		newMortal("murderer")
-	elseif(key=="up")then
-			checkScrollUp()
-	elseif(key=="down")then
- 		 checkScrollDown()
+	if(inGame)then
+		if(key=="r")then
+			love.load()
+		elseif(key=="a")then
+			evilPercAdd(0.1)
+		elseif(key=="q")then
+			inspectPlayer=true
+			if(debug==false) then debug=true money=money+1000000 else debug=false end
+		elseif(key=="1")then
+			newMortal("normal")
+		elseif(key=="2")then
+			newMortal("cop")
+		elseif(key=="3")then
+			newMortal("murderer")
+		elseif(key=="up")then
+				checkScrollUp()
+		elseif(key=="down")then
+	 		 checkScrollDown()
+		end
+	else
+		--menu
+		menu.keyPressed()
 	end
 end
 function love.keyreleased(key)
-	if(key=="q")then
-		inspectPlayer=false
+	if(inGame)then
+		if(key=="q")then
+			inspectPlayer=false
+		end
+	else
+		--menu
+		menu.keyReleased()
 	end
 end
 
 function love.wheelmoved(x, y)
-	 if y > 0 then
-		 checkScrollUp()
+	if(inGame)then
+		 if y > 0 then
+			 checkScrollUp()
 
-	 elseif y < 0 then
-		 checkScrollDown()
+		 elseif y < 0 then
+			 checkScrollDown()
 
-	 end
+		 end
+ 	else
+ 		--menu
+ 	end
 end
 
 checkScrollDown=function()

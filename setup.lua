@@ -14,11 +14,13 @@ window.h=0
 game={}
 game.w=4000
 game.h=650
-love.window.setTitle("Motel")
+love.window.setTitle("Motel Management Simulator '98")
 love.window.setMode( window.w, window.h)
 window.w,window.h=love.window.getMode()
 canvas = love.graphics.newCanvas(window.w, window.h)
 love.window.setFullscreen(true)
+
+love.window.setIcon(love.image.newImageData(("res/icon.png")))
 
 love.graphics.setBackgroundColor(0,0,0)
 
@@ -27,22 +29,30 @@ love.graphics.setBackgroundColor(0,0,0)
 pixelShader = love.graphics.newShader [[
       vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 pixel_coords)
       {
-          float dx=30*(1./7000);
-          float dy=30*(1./7000);
+          float dx=4*(1./7000);
+          float dy=4*(1./7000);
           vec2 coords=vec2(dx*floor(texture_coords.x/dx),dy*floor(texture_coords.y/dx));
           vec4 pixelColor=Texel(texture,coords);
           return pixelColor*color;
       }
   ]]
-partyShader = love.graphics.newShader [[
-      extern number time;
+vingetteShader = love.graphics.newShader [[
+      extern number x;
+      extern number y;
+      extern number w;
+      extern number h;
       vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 pixel_coords)
       {
-
+          vec2 st=vec2(pixel_coords.x/w,pixel_coords.y/h);
+          vec2 bulbCentre=vec2(x/w,y/h);
+          float dist=distance(bulbCentre,st);
           vec4 pixelColor=Texel(texture,texture_coords);
-          pixelColor.r=pixelColor.r*sin(time*10.);
-          pixelColor.b=pixelColor.b*sin(time*8.);
-          pixelColor.g=pixelColor.g*sin(time*5.);
+          pixelColor.r=pixelColor.r;
+          pixelColor.g=pixelColor.g;
+          pixelColor.b=pixelColor.b;
+          color.r=color.r*1.0/smoothstep(0.05,0.3,dist);
+          color.g=color.g*1.0/smoothstep(0.05,0.3,dist);
+          color.b=color.b*1.0/smoothstep(0.05,0.3,dist);
           return pixelColor*color;
       }
   ]]

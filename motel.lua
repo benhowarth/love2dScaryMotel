@@ -11,6 +11,9 @@ roomWidth=10
 roomHeight=15
 M.imgs.railing=love.graphics.newImage("res/railing.png")
 M.imgs.stairs=love.graphics.newImage("res/stairs.png")
+M.imgs.ac1=love.graphics.newImage("res/ac1.png")
+M.imgs.ac2=love.graphics.newImage("res/ac2.png")
+M.imgs.slime1=love.graphics.newImage("res/slime1.png")
 M.imgs.sign1=love.graphics.newImage("res/sign1.png")
 M.imgs.sign2=love.graphics.newImage("res/sign2.png")
 M.imgs.vendingMachine=love.graphics.newImage("res/vending_machine.png")
@@ -26,6 +29,8 @@ M.imgs.hotdogcart=love.graphics.newImage("res/hotdogcart.png")
 M.imgs.hotdog=love.graphics.newImage("res/hotdog.png")
 M.imgs.statue=love.graphics.newImage("res/statue.png")
 M.imgs.statueGlow=love.graphics.newImage("res/statueGlow.png")
+
+
 M.roofBottomWidthExtra=20
 M.roofBottomHeight=20
 M.roofTopHeight=10
@@ -43,7 +48,8 @@ M.print=function(x,y,w,fW,fH)
     --floors[f]:print(x,y-((f-1)*w*M.imgs.floor:getHeight()),w)
     floors[f]:print(x,y-((f-1)*w*10)-(f*floors[f].lineWidth*2),w,fW,fH)
   end
-  love.graphics.rectangle("fill",x-M.roofBottomWidthExtra/2,y-((#floors-1)*w*10)-(#floors*floors[#floors].lineWidth*2)-M.roofBottomHeight,floors[#floors].width+M.roofBottomWidthExtra,M.roofBottomHeight)
+  roofY=y-((#floors-1)*w*10)-(#floors*floors[#floors].lineWidth*2)-M.roofBottomHeight
+  love.graphics.rectangle("fill",x-M.roofBottomWidthExtra/2,roofY,floors[#floors].width+M.roofBottomWidthExtra,M.roofBottomHeight)
   love.graphics.rectangle("fill",x,y-((#floors-1)*w*10)-(#floors*floors[#floors].lineWidth*2)-M.roofBottomHeight-M.roofTopHeight,floors[#floors].width,M.roofTopHeight)
   drawProblems(x+130,y-10,w)
 end
@@ -52,6 +58,7 @@ problems={}
 Problem=Class{
   init=function(self,id,name,floor,active,availableFunc,updateMS,preFixUpdate,preFixDraw,preFixFragTable,preFixRating,postFixUpdate,postFixDraw,postFixFragTable,postFixRating)
     self.id=id
+    self.appeared=false
     self.name=name
     self.updateMS=updateMS
     self.active=active
@@ -101,6 +108,9 @@ getProblemByName=function(name)
   for i=1,#problems do
     if(problems[i].name==name)then return problems[i] end
   end
+end
+hasAppeared=function(name)
+  return getProblemByName(name).appeared
 end
 isFixed=function(name)
   return getUpgradeByName(name).fixed==true
@@ -214,6 +224,7 @@ getPossibleFaults=function(floor)
         faultsToReturn[#faultsToReturn+1]={}
         faultsToReturn[#faultsToReturn].text=choose(problems[i].preFixFragTable)
         faultsToReturn[#faultsToReturn].rating=problems[i].preFixRating
+        faultsToReturn[#faultsToReturn].id=i
       end
 
     end
@@ -227,6 +238,7 @@ getPossibleFaults=function(floor)
         positivesToReturn[#positivesToReturn+1]={}
         positivesToReturn[#positivesToReturn].text=choose(problems[i].postFixFragTable)
         positivesToReturn[#positivesToReturn].rating=problems[i].postFixRating
+        positivesToReturn[#positivesToReturn].id=i
       end
 
     end
@@ -342,7 +354,7 @@ function(self,x,y,w)
     love.graphics.draw(M.imgs.sign1,x,y-((floors[1].height+(-1*floors[1].lineWidth))*(#floors-1))+50,0,w,w,M.imgs.sign1:getWidth()/2,M.imgs.sign1:getHeight()/2)
   end
 end,{"It had a sign"},3)
-newUpgrade("Sign",nil,10,nil,{"No Sign"},nil)
+newUpgrade("Sign",nil,10,function() return hasAppeared("No Sign") end,{"No Sign"},nil)
 
 vendingMachineTimerMax=400
 vendingMachineTimer=vendingMachineTimerMax
@@ -356,7 +368,7 @@ newProblem("No Vending Machine",nil,true,nil,100,nil,nil,{"There was nothing to 
     love.graphics.draw(M.imgs.vendingMachine,x,y,0,w,w,M.imgs.vendingMachine:getWidth()/2,M.imgs.vendingMachine:getHeight()/2)
   else
     love.graphics.draw(M.imgs.vendingMachine2,x,y,0,w,w,M.imgs.vendingMachine:getWidth()/2,M.imgs.vendingMachine:getHeight()/2)
-    love.graphics.rectangle("line",floorX+floors[1].width-10,floorY-50,50,70);
+    --love.graphics.rectangle("line",floorX+floors[1].width-10,floorY-50,50,70);
     vendingMachineDowntime=clamp(vendingMachineDowntime+0.0001,0,1)
     if(inBox(mouseX,mouseY,floorX+floors[1].width-10,floorY-50,50,70) and love.mouse.isDown(1))then
       vendingMachineTimer=vendingMachineTimerMax
@@ -367,7 +379,7 @@ end,{"It had a vending machine"},3)
 
 --did this function have something in?????
 newProblem("No Hotdogs",nil,true,function() return isBought("Vending Machine") end,100,function(self,x,y,w)end,nil,{"There was only vending machine to eat"},3,nil,nil,{"It had delicious hotdogs"},4)
-newUpgradeSpecial("Vending Machine",nil,10,nil,{"No Vending Machine"},{"No Hotdogs"},function()
+newUpgradeSpecial("Vending Machine",nil,10,function() return hasAppeared("No Vending Machine") end,{"No Vending Machine"},{"No Hotdogs"},function()
   newNewsStory("Vending Machine","Got the new vending machine installed. You may have to restock every so often (watch out for rats, you're gonna get some rats). -"..getHelpInitial())
  end)
 newUpgradeSpecial("Get More Stock For Vending Machine",nil,40,function() return isBought("Vending Machine") end,nil,nil,function()
@@ -392,6 +404,37 @@ newUpgradeSpecial("Huge Waiting List",nil,4000,function() return (isBought("Bigg
   customerLim=10
 end)
 
+acOn=true
+acClickTimer=0
+newProblem("No AC",nil,false,function() return true end,100,nil,nil,{"There was no AC"},2,nil,nil,{"It had AC"},3)
+newUpgradeSpecial("Air Conditioning",nil,100,function() return hasAppeared("No AC") end,{"No AC"},{"Slime"},function() end)
+newProblem("Slime",nil,false,function() return true end,10,
+--newProblem("Slime",nil,false,function() return isBought("Air Conditioning") end,100,
+  function(self)
+    if(acClickTimer>0 and not love.mouse.isDown(1))then acClickTimer=acClickTimer-1 end
+    if(inBox(mouseX,mouseY,motelXOffset+425,roofY-75,100,100) and love.mouse.isDown(1) and acClickTimer==0)then
+       acClickTimer=20
+        if(acOn)then
+          acOn=false
+          msg("false","ye")
+        else
+          acOn=true
+          --msg("true","ye")
+        end
+
+
+
+    end
+  end,
+  function(self,x,y,w)
+    love.graphics.rectangle("line",motelXOffset+425,roofY-75,100,100)
+    local imgToDraw=M.imgs.ac1
+    if(acOn and math.floor(math.fmod(time2*3,2))==0)then imgToDraw=M.imgs.ac2 end
+    love.graphics.draw(imgToDraw,x,roofY,0,w/2,w/2,imgToDraw:getWidth(),imgToDraw:getHeight())
+    if(acClickTimer<=0)then
+      love.graphics.draw(M.imgs.slime1,x,roofY,0,w/2,w/2,imgToDraw:getWidth(),imgToDraw:getHeight())
+    end
+  end,{"There was slime"},1,nil,nil,{"There was no slime"},3)
 
 
 T.addGrammarTable("strange",{"strange","weird","scary","worrying","concerning","suspicious","odd"})
@@ -401,7 +444,7 @@ T.addGrammarTable("strangeNoises",{"#strange# #noises#","#noises#"})
 --newUpgrade("Investigate noises",10,3,{"I couldn't sleep because of #strangeNoises#","I kept hearing #strangeNoises#","There were always #strangeNoises#","I kept being woken up by #strangeNoises#"},15)
 
 newProblem("Noises",nil,false,function() return #newsFeed>3 end,100,nil,nil,{"I couldn't sleep because of #strangeNoises#","I kept hearing #strangeNoises#","There were always #strangeNoises#","I kept being woken up by #strangeNoises#"},1,nil,nil,{"It was peaceful"},4)
-newUpgrade("Investigate Noises",nil,10,function() return #newsFeed>3 end,{"Noises"},nil)
+newUpgrade("Investigate Noises",nil,10,function() return #newsFeed>3 and hasAppeared("Noises") end,{"Noises"},nil)
 
 flashlightStrength=0.04
 flashlightRad=30
@@ -543,8 +586,8 @@ Shadow=Class{
   end;
 }
 
-newProblem("Shadows",nil,false,function() return true end,10,
---newProblem("Shadows",nil,false,function() return isBought("Investigate Noises") end,10,
+--newProblem("Shadows",nil,false,function() return true end,10,
+newProblem("Shadows",nil,false,function() return isBought("Investigate Noises") end,10,
 function(self)
   --love.window.showMessageBox("shadow", "Update", "info", true)
   if(everyMS(200) and getNightTime() and #shadows<1)then shadows[#shadows+1]=Shadow(#shadows+1) end
@@ -581,7 +624,7 @@ T.addGrammarTable("partOfRoom",{"wall","bed","window","bathroom","mirror","floor
 
 
 newProblem("Symbols",nil,false,function() return (#newsFeed>5 and isBought("Investigate Noises")) end,100,nil,nil,{"I had #strangeSymbols# #painted# on my #partOfRoom#"},1,nil,nil,{"All the furniture was clean"},3)
-newUpgradeSpecial("Clean Up Symbols",nil,10,function() return #newsFeed>8 end,{"Symbols"},nil,function()
+newUpgradeSpecial("Clean Up Symbols",nil,10,function() return #newsFeed>8 and hasAppeared("Symbols") end,{"Symbols"},nil,function()
   newNewsStory("Dumb drawings","Hey, don't worry about those drawings and graffiti, I sorted it. Stupid teenagers. -"..getHelpInitial())
 end)
 
@@ -663,7 +706,7 @@ hotdogTop=math.ceil(math.random()*#mortalTop)
 hotdogBottom=math.ceil(math.random()*#mortalBottom)
 hotdogClosedTimer=0
 
-newProblem("Cats",nil,false,function() return isBought("Vending Machine") and #newsFeed>5 end,100,
+newProblem("Cats",nil,false,function() return isBought("Vending Machine") and #newsFeed>5 and isBought("Hire hotdog cart") end,100,
 function(self)
   if(getNightTime() and #cats<10 and catAttack==false)then
     --if(math.floor(math.fmod(time2,dayLen/3))==0)then
@@ -714,17 +757,17 @@ function(self,x,y,w)
     hotdogs[i]:draw(x,y,w/2)
   end
 end,{"I couldn't sleep because of cats"},3,nil,nil,{"There were no cats"},4)
-newUpgradeSpecial("Hire hotdog cart",nil,10,function() return isBought("Vending Machine") and #newsFeed>5 end,{"No Hotdogs"},{"Cats"})
+newUpgradeSpecial("Hire hotdog cart",nil,10,function() return isBought("Vending Machine") and #newsFeed>5 and hasAppeared("No Hotdogs") end,{"No Hotdogs"},{"Cats"})
 --newUpgradeSpecial("Hire hotdog cart",nil,10,function() return true end,{"No Hotdogs"},{"Cats"})
 
 
 --statueTimer=30
-statueTimer=1
+statueTimer=0
 --statueHelpTimer=50
 statueHelpTimer=30
 statueHelpCounter=0
 newProblem("Mound",nil,false,function() return #newsFeed>4 end,100,nil,nil,{"I tripped over a mound in the parking lot"},2,nil,nil,{"The ground was smooth"},3)
-newProblem("Statue",nil,false,function() return isBought("Vending Machine") and #newsFeed>5 end,100,
+newProblem("Statue",nil,false,function() return isBought("Unearth Mound") end,100,
 
 function(self)
 
@@ -756,7 +799,7 @@ end,
 function(self,x,y,w)
   --love.graphics.draw(M.imgs.cat,x,y,0,w,w,M.imgs.cat:getWidth()/2,M.imgs.cat:getHeight()/2)
     love.graphics.setColor(255, 0, 0, 255)
-    love.graphics.rectangle("line", floorX+floors[1].width+100,floorY-100,100,100)
+    --love.graphics.rectangle("line", floorX+floors[1].width+100,floorY-100,100,100)
     love.graphics.setColor(255, 255, 255, 255)
     if(statueTimer>0)then
       love.graphics.draw(M.imgs.statue,x+30+floors[1].width,y+floors[1].height,0,w,w,M.imgs.statue:getWidth(),M.imgs.statue:getHeight())
@@ -764,7 +807,7 @@ function(self,x,y,w)
       love.graphics.draw(M.imgs.statueGlow,x+30+floors[1].width,y+floors[1].height,0,w,w,M.imgs.statueGlow:getWidth(),M.imgs.statueGlow:getHeight())
     end
 end,{"There was a weird statue outside"},2,nil,nil,{"There was no weird statue outside"},1)
-newUpgradeSpecial("Unearth mound",nil,10,function() return isBought("Vending Machine") and #newsFeed>5 end,{"Mound"},{"Statue"})
+newUpgradeSpecial("Unearth mound",nil,10,function() return hasAppeared("Mound") end,{"Mound"},{"Statue"})
 
 
 

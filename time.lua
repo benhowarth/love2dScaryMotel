@@ -79,7 +79,10 @@ function getDateTextFull(timeToGet)
   local timeOfDay="(day)"
   if(getNightTime()) then timeOfDay="(night)" end
   --return string.format("Week %d Day %d (%d %d) %s",weeks,days,hours,mins,timeOfDay)
-  return string.format("Week %d Day %d (%d %d) %d",weeks,days,hours,mins,grayLevel)
+  if(not debug)then
+    return string.format("Week %d Day %d",weeks,days)
+  end
+  return string.format("Week %d Day %d (%d %d)",weeks,days,hours,mins)
 end
 startingHoursOfDay=12
 centreOfDay=12
