@@ -181,7 +181,7 @@ function love.draw()
 		 --if(math.fmod(time2,dayLen/4)==0)then love.window.showMessageBox("night", Inspect(getNightTime()), "info", true) end
 		 	grayLevelMax=50-(50*evilPerc)
 			 if(getNightTime())then
-				if(grayLevel<0) then grayLevel=0
+				if(grayLevel<=0) then grayLevel=0
 				else grayLevel=grayLevel-1 end
 
 
@@ -194,7 +194,7 @@ function love.draw()
 			 	love.graphics.setColor(grayLevel,grayLevel,grayLevel,255)
 		 	 	love.graphics.rectangle("fill", 0, 0, window.w, window.h)
 			else
-				 if(grayLevel>grayLevelMax) then grayLevel=grayLevelMax
+				 if(grayLevel>=grayLevelMax) then grayLevel=grayLevelMax
 				 else grayLevel=grayLevel+1 end
 
 				if(within(moonY,celestialMax,celestialSpeed/2)) then moonY=celestialMax
@@ -265,8 +265,11 @@ function love.draw()
 	else
 	 	love.graphics.print(string.format("$%.2f",money), newsFeedWidth+40, 40)
  	end
-	 love.graphics.print(string.format("Number of occupants %d of %d",howManyMortalsStaying(),getRoomNo()), newsFeedWidth+40, 60)
-
+	if(hasAppeared("No AC") or debug)then
+		love.graphics.print(string.format("Number of occupants %d of %d (Temp %fC)",howManyMortalsStaying(),getRoomNo(),getTemperature()), newsFeedWidth+40, 60)
+	else
+		love.graphics.print(string.format("Number of occupants %d of %d",howManyMortalsStaying(),getRoomNo()), newsFeedWidth+40, 60)
+	end
 
 
 	love.graphics.rectangle("line", newsFeedWidth+30, 10, window.w-newsFeedWidth-40, window.h/2-10)
@@ -321,9 +324,10 @@ function love.draw()
 	else
 		love.graphics.setShader(pixelShader)
 		vingetteShader:send("w",window.w)
-		vingetteShader:send("h",window.h)
-		vingetteShader:send("x",mouseX)
-		vingetteShader:send("y",mouseY)
+		vingetteShader:send("h",window.w)
+		vingetteShader:send("x",bulb.x)
+		vingetteShader:send("y",bulb.y)
+		vingetteShader:send("light_on",bulb.on)
 		love.graphics.setShader(vingetteShader)
 		love.graphics.setCanvas(canvas)
 		menu.draw()

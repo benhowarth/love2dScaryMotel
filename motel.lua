@@ -296,6 +296,20 @@ getPossibleFaults=function(floor)
       positivesToReturn[#positivesToReturn].rating=4
     end
   end
+  if(isBought("Air Conditioning"))then
+    if(acSlimeUptime>0.5)then
+
+        faultsToReturn[#faultsToReturn+1]={}
+        faultsToReturn[#faultsToReturn].text=T.parse("There was a lot of slime")
+        faultsToReturn[#faultsToReturn].rating=2
+    else
+
+
+      positivesToReturn[#positivesToReturn+1]={}
+      positivesToReturn[#positivesToReturn].text=T.parse("There was no slime, ac was good")
+      positivesToReturn[#positivesToReturn].rating=4
+    end
+  end
 
   local toReturn={}
   toReturn.faults=faultsToReturn
@@ -404,19 +418,38 @@ newUpgradeSpecial("Huge Waiting List",nil,4000,function() return (isBought("Bigg
   customerLim=10
 end)
 
-acOn=true
+temperature=20
+function getTemperature()
+  hourFactor=math.sin(((getHours(time2)/24)*2*math.pi)+(math.pi/2))*-1
+  --temp change in a day cycle starts at 4 degrees either side and increases by 0.5 degree every 1/2 day
+  local tempChangeFactor=4+(time2/(dayLen/2))
+  local temp=20+(hourFactor*tempChangeFactor)
+
+  if(acOn)then
+    temp=temp+acPower*-5
+  end
+  return temp
+end;
+--time2=dayLen*7*2
+acOn=false
+acPower=1
+--slime timer
+acSlimer=100
+acSlimeUptime=0
 acClickTimer=0
-newProblem("No AC",nil,false,function() return true end,100,nil,nil,{"There was no AC"},2,nil,nil,{"It had AC"},3)
+newProblem("No AC",nil,false,function() return true end,1,nil,nil,{"There was no AC"},2,nil,nil,{"It had AC"},3)
 newUpgradeSpecial("Air Conditioning",nil,100,function() return hasAppeared("No AC") end,{"No AC"},{"Slime"},function() end)
-newProblem("Slime",nil,false,function() return true end,10,
---newProblem("Slime",nil,false,function() return isBought("Air Conditioning") end,100,
+--newProblem("Slime",nil,false,function() return true end,10,
+newProblem("Slime",nil,false,function() return isBought("Air Conditioning") end,10,
   function(self)
+
     if(acClickTimer>0 and not love.mouse.isDown(1))then acClickTimer=acClickTimer-1 end
     if(inBox(mouseX,mouseY,motelXOffset+425,roofY-75,100,100) and love.mouse.isDown(1) and acClickTimer==0)then
-       acClickTimer=20
+       acClickTimer=1
+       if(acSlimer==0)then acSlimer=love.math.random(50,120) end
         if(acOn)then
           acOn=false
-          msg("false","ye")
+          --msg("false","ye")
         else
           acOn=true
           --msg("true","ye")
@@ -425,13 +458,14 @@ newProblem("Slime",nil,false,function() return true end,10,
 
 
     end
+    if(acSlimer>0)then acSlimer=acSlimer-1 acSlimeUptime=clamp(acSlimeUptime-0.02,0,1) else acSlimeUptime=clamp(acSlimeUptime+0.01,0,1) end
   end,
   function(self,x,y,w)
-    love.graphics.rectangle("line",motelXOffset+425,roofY-75,100,100)
+    --love.graphics.rectangle("line",motelXOffset+425,roofY-75,100,100)
     local imgToDraw=M.imgs.ac1
     if(acOn and math.floor(math.fmod(time2*3,2))==0)then imgToDraw=M.imgs.ac2 end
     love.graphics.draw(imgToDraw,x,roofY,0,w/2,w/2,imgToDraw:getWidth(),imgToDraw:getHeight())
-    if(acClickTimer<=0)then
+    if(acSlimer==0)then
       love.graphics.draw(M.imgs.slime1,x,roofY,0,w/2,w/2,imgToDraw:getWidth(),imgToDraw:getHeight())
     end
   end,{"There was slime"},1,nil,nil,{"There was no slime"},3)
@@ -842,7 +876,7 @@ Room=Class{
 
 
       love.graphics.setColor(255,0,0,255)
-      love.graphics.rectangle("line",x+self.x,y+self.y,35,50)
+      --love.graphics.rectangle("line",x+self.x,y+self.y,35,50)
         love.graphics.setColor(255,255,255,255)
 
 

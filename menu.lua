@@ -124,11 +124,22 @@ officeWindow={
   h=600,
 }
 
+bulb={
+  x=window.w,
+  y=60,
+  angle=0,
+  on=true
+}
 menu={}
+menuTime=0
 menu.update=function()
+  menuTime=menuTime+1
   for d=1,#draggables do
       draggables[d]:update(corkBoard.x,corkBoard.x+corkBoard.w,corkBoard.y,corkBoard.y+corkBoard.h)
   end
+  bulb.angle=(math.sin(menuTime*0.01))/2
+  bulb.x=(window.w/2)+(bulb.angle*20)
+  bulb.y=60-(math.abs(bulb.angle)*10)
 end;
 
 menu.draw=function()
@@ -177,11 +188,49 @@ menu.draw=function()
   love.graphics.setStencilTest()
 
 
+  --bulb
+  love.graphics.setColor(252, 226, 166)
+  love.graphics.setLineWidth(10)
+  love.graphics.line(bulb.x+math.sin(-bulb.angle*0.3)*20,bulb.y-math.cos(-bulb.angle*0.3)*24,window.w/2,-30)
+  love.graphics.setLineWidth(1)
+
   love.graphics.setColor(255, 255, 255,255)
+  love.graphics.push()
+  love.graphics.translate(bulb.x,bulb.y)
+  love.graphics.rotate(-bulb.angle*0.3)
+  --love.graphics.circle("fill",bulb.x,bulb.y,20)
+  love.graphics.circle("fill",0,0,20)
+  --love.graphics.rectangle("fill",bulb.x-10,bulb.y-30,20,30)
+  love.graphics.rectangle("fill",-10,-30,20,30)
+  love.graphics.pop()
+
+
+  love.graphics.setColor(252, 226, 166)
+  --love.graphics.rectangle("line",bulb.x-30,bulb.y-30,60,60)
+  love.graphics.rectangle("fill",window.w-250,400,40,60)
+
+  if(bulb.on)then
+  love.graphics.setColor(50, 35, 20)
+  love.graphics.rectangle("fill",window.w-250+15,400+15,10,15)
+
+  love.graphics.setColor(200, 180, 100)
+  love.graphics.rectangle("fill",window.w-250+15,400+30,10,15)
+
+  else
+  love.graphics.setColor(200, 180, 100)
+  love.graphics.rectangle("fill",window.w-250+15,400+15,10,15)
+
+  love.graphics.setColor(50, 35, 20)
+  love.graphics.rectangle("fill",window.w-250+15,400+30,10,15)
+  end
+
+
+  love.graphics.setColor(255,255,255)
 end;
 
 menu.onClick=function()
   if(inBox(mouseX,mouseY,officeWindow.x,officeWindow.y,officeWindow.w,officeWindow.h)) then inGame=true paused=false end
+  if(inBox(mouseX,mouseY,window.w-250,400,40,60)) then if(bulb.on)then bulb.on=false else bulb.on=true end end
   for d=1,#draggables do
     dr=draggables[d]
     if(inBox(mouseX,mouseY,dr.x,dr.y,dr.w,dr.h))then

@@ -41,18 +41,61 @@ vingetteShader = love.graphics.newShader [[
       extern number y;
       extern number w;
       extern number h;
+      extern bool light_on;
       vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 pixel_coords)
       {
           vec2 st=vec2(pixel_coords.x/w,pixel_coords.y/h);
           vec2 bulbCentre=vec2(x/w,y/h);
           float dist=distance(bulbCentre,st);
-          vec4 pixelColor=Texel(texture,texture_coords);
+
+          float dx=4*(1./7000);
+          float dy=4*(1./7000);
+          vec2 coords=vec2(dx*floor(texture_coords.x/dx),dy*floor(texture_coords.y/dx));
+          vec4 pixelColor=Texel(texture,coords);
+
+
+
           pixelColor.r=pixelColor.r;
           pixelColor.g=pixelColor.g;
           pixelColor.b=pixelColor.b;
-          color.r=color.r*1.0/smoothstep(0.05,0.3,dist);
-          color.g=color.g*1.0/smoothstep(0.05,0.3,dist);
-          color.b=color.b*1.0/smoothstep(0.05,0.3,dist);
+          if(light_on==true){
+            color.rgb=color.rgb-(smoothstep(0.01,0.03,dist)*0.2);
+            color.rgb=color.rgb-(smoothstep(0.09,0.11,dist)*0.1);
+            color.rgb=color.rgb-(smoothstep(0.3,1.1,dist));
+          }else{
+            color.rgb=color.rgb-(smoothstep(0.3,1.1,dist));
+            color.rgb*=0.2;
+          }
+          return pixelColor*color;
+      }
+  ]]
+flashlightShader = love.graphics.newShader [[
+      extern number x;
+      extern number y;
+      extern number w;
+      extern number h;
+      extern number rad;
+      extern number bleed;
+      vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 pixel_coords)
+      {
+          vec2 st=vec2(pixel_coords.x/w,pixel_coords.y/h);
+          vec2 bulbCentre=vec2(x/w,y/h);
+          float dist=distance(bulbCentre,st);
+          float rad=rad/w;
+
+          float dx=4*(1./7000);
+          float dy=4*(1./7000);
+          vec2 coords=vec2(dx*floor(texture_coords.x/dx),dy*floor(texture_coords.y/dx));
+          vec4 pixelColor=Texel(texture,coords);
+
+
+
+          pixelColor.r=pixelColor.r;
+          pixelColor.g=pixelColor.g;
+          pixelColor.b=pixelColor.b;
+          color.r=color.r*1.0/smoothstep(rad-bleed,rad+bleed,dist);
+          color.g=color.g*1.0/smoothstep(rad-bleed,rad+bleed,dist);
+          color.b=color.b*1.0/smoothstep(rad-bleed,rad+bleed,dist);
           return pixelColor*color;
       }
   ]]
