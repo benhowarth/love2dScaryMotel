@@ -395,7 +395,7 @@ Mortal=Class{
 
 
 --mortalTypes={{"normal",0.9},{"murderer",0.06},{"cop",0.04}}
-mortalTypes={{"normal",0.33},{"murderer",0.33},{"cop",0.34}}
+mortalTypes={{"normal",0.94},{"murderer",0.05},{"cop",0.01}}
 decideMortalType=function()
   local mortalProbR=love.math.random()
   local sum=0

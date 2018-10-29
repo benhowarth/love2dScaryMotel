@@ -391,6 +391,19 @@ newProblem("No Vending Machine",nil,true,nil,100,nil,nil,{"There was nothing to 
 end,{"It had a vending machine"},3)
 
 
+--COPS
+copNext=false
+newProblem("Cops",nil,false,function() return missingMortalsNo>2 end,100000,
+function(self,x,y,w)
+end,
+function(self)
+  if(math.random()>0.7)then copNext=true end
+  msg("check cop, nextcop:",Inspect(copNext))
+end,
+{"I kept getting questioned by police"},2,nil,nil,{"There were no cops"},4)
+
+
+
 --did this function have something in?????
 newProblem("No Hotdogs",nil,true,function() return isBought("Vending Machine") end,100,function(self,x,y,w)end,nil,{"There was only vending machine to eat"},3,nil,nil,{"It had delicious hotdogs"},4)
 newUpgradeSpecial("Vending Machine",nil,10,function() return hasAppeared("No Vending Machine") end,{"No Vending Machine"},{"No Hotdogs"},function()

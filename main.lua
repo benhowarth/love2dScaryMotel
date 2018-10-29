@@ -109,7 +109,12 @@ function love.update(dt)
 			--if(everyMS(mortalInterval))then
 			--love.window.showMessageBox("time2 vs mortaltime", Inspect(time2).."|"..Inspect(mortalTime), "info", true)
 			if(math.floor(time2)==math.floor(mortalTime))then
-				newMortal()
+				if(copNext)then
+					newMortal("cop")
+					copNext=false
+				else
+					newMortal()
+				end
 				--mortalInterval=mortalInterval*0.9
 				--if(mortalInterval<mortalIntervalMin)then mortalInterval=mortalIntervalMin end
 
