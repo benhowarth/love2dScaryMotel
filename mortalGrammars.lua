@@ -10,8 +10,13 @@ T.addGrammarTable("review1n0p",{"@negfrag1@.","All I have to say is @negfrag1@."
 T.addGrammarTable("review1n1p",{"@posfrag1@, but @negfrag1@.","@negfrag1@, however @posfrag1@."})
 T.addGrammarTable("review1n2p",{"@negfrag1@, but @posfrag1@ and @posfrag2@.","@posfrag1@ and @posfrag2@, other than that @negfrag1@."})
 T.addGrammarTable("review2n0p",{"@negfrag1@ and @negfrag2@."})
-T.addGrammarTable("review2n1p",{"@negfrag1@, @negfrag2@ however @posfrag1@."})
-T.addGrammarTable("review3n0p",{"Not only @negfrag1@ and @negfrag2@, but also @negfrag3@."})
+T.addGrammarTable("review2n1p",{"@negfrag1@, @negfrag2@ however @posfrag1"})
+T.addGrammarTable("review3n0p",{"@negfrag1@, @negfrag2@ and @negfrag3@."})
+
+
+T.addGrammarTable("hello",{"hey.","yeah?","huh?","whats this about?"})
+T.addGrammarTable("copHello",{"evening"})
+T.addGrammarTable("hello",{"hello?"})
 
 T.addGrammarTableFromFile("firstName","res/firstNames.txt")
 T.addGrammarTableFromFile("lastName","res/lastNames.txt")

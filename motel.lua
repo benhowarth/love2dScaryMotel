@@ -1,12 +1,14 @@
 money=0
 --money=100000
 
-
+motelGroundY=260
 M={}
 M.imgs={}
 M.imgs.main=love.graphics.newImage("res/motel.png")
 --M.imgs.floor=love.graphics.newImage("res/floor.png")
 M.imgs.door=love.graphics.newImage("res/door.png")
+M.imgs.doorOpen=love.graphics.newImage("res/doorOpen.png")
+M.imgs.doorOpenBloody=love.graphics.newImage("res/doorOpenBloody.png")
 roomWidth=10
 roomHeight=15
 M.imgs.railing=love.graphics.newImage("res/railing.png")
@@ -34,6 +36,8 @@ M.imgs.statueGlow=love.graphics.newImage("res/statueGlow.png")
 M.roofBottomWidthExtra=20
 M.roofBottomHeight=20
 M.roofTopHeight=10
+
+
 M.print=function(x,y,w,fW,fH)
   --love.graphics.draw(M.imgs.main,x,y,0,w,w)
 
@@ -254,6 +258,7 @@ getPossibleFaults=function(floor)
     end
   end
   if(noiseSum>6)then
+    faultsToReturn[#faultsToReturn+1]={}
     faultsToReturn[#faultsToReturn].text=T.parse("It was noisey")
     --faultsToReturn[#faultsToReturn].rating=math.floor(1-(noiseSum/#floors[floor].rooms*3))*5
     faultsToReturn[#faultsToReturn].rating=2
@@ -295,6 +300,40 @@ getPossibleFaults=function(floor)
       positivesToReturn[#positivesToReturn].text=T.parse("The vending machine was always fully stocked")
       positivesToReturn[#positivesToReturn].rating=4
     end
+  end
+  if(hasAppeared("No AC"))then
+    if(temperature>70)then
+      --boiling
+      faultsToReturn[#faultsToReturn+1]={}
+      faultsToReturn[#faultsToReturn].text=T.parse("I was boiling alive")
+      faultsToReturn[#faultsToReturn].rating=0
+    elseif(temperature>40)then
+      --very hot
+      faultsToReturn[#faultsToReturn+1]={}
+      faultsToReturn[#faultsToReturn].text=T.parse("I was extremely hot")
+      faultsToReturn[#faultsToReturn].rating=1
+    elseif(temperature>30)then
+      --too hot
+      faultsToReturn[#faultsToReturn+1]={}
+      faultsToReturn[#faultsToReturn].text=T.parse("I was too hot")
+      faultsToReturn[#faultsToReturn].rating=2
+    elseif(temperature>10)then
+      --a good temp
+      positivesToReturn[#positivesToReturn+1]={}
+      positivesToReturn[#positivesToReturn].text=T.parse("I was a good temperature")
+      positivesToReturn[#positivesToReturn].rating=5
+    elseif(temperature>0)then
+      --a bit cold
+      faultsToReturn[#faultsToReturn+1]={}
+      faultsToReturn[#faultsToReturn].text=T.parse("I was a bit cold")
+      faultsToReturn[#faultsToReturn].rating=3
+    else
+      --very cold
+      faultsToReturn[#faultsToReturn+1]={}
+      faultsToReturn[#faultsToReturn].text=T.parse("I almost froze to death")
+      faultsToReturn[#faultsToReturn].rating=2
+    end
+
   end
   if(isBought("Air Conditioning"))then
     if(acSlimeUptime>0.5)then
@@ -346,21 +385,19 @@ isBought=function(name)
   return getUpgradeByName(name).bought==true
 end
 
+--_____________________________________PROBLEMS START_______________________________________________________________
 
-
-
-T.addGrammarTable("very",{"very","extremely","unbelievably","incredibly","super"})
-T.addGrammarTable("dirty",{"dirty","filthy","gross"})
-T.addGrammarTable("veryDirty",{"#dirty#","#very# #dirty#"})
 
 --Problem
 --(name,floor,active,availableFunc,updateMS,preFixUpdate,preFixDraw,preFixFragTable,preFixRating,postFixUpdate,postFixDraw,postFixFragTable,postFixRating)
 --upgrade
 --(name,floor,cost,availableFunc,problemsItFixes,problemsItCauses)
 
+--_________________________________WEEK 1_______________________________________________
 
 
-newProblem("No Sign",nil,true,nil,100,nil,nil,{"I had trouble finding the place"},1,nil,
+--sign
+newProblem("No Sign",nil,false,function() return #newsFeed>2 end,100,nil,nil,{"I had trouble finding the place"},1,nil,
 function(self,x,y,w)
   if(math.random()>0.9)then
     love.graphics.draw(M.imgs.sign2,x,y-((floors[1].height+(-1*floors[1].lineWidth))*(#floors-1))+50,0,w,w,M.imgs.sign2:getWidth()/2,M.imgs.sign2:getHeight()/2)
@@ -368,12 +405,20 @@ function(self,x,y,w)
     love.graphics.draw(M.imgs.sign1,x,y-((floors[1].height+(-1*floors[1].lineWidth))*(#floors-1))+50,0,w,w,M.imgs.sign1:getWidth()/2,M.imgs.sign1:getHeight()/2)
   end
 end,{"It had a sign"},3)
-newUpgrade("Sign",nil,10,function() return hasAppeared("No Sign") end,{"No Sign"},nil)
+newUpgrade("Sign",nil,300,function() return hasAppeared("No Sign") end,{"No Sign"},nil)
 
+
+--renovate floor
+T.addGrammarTable("very",{"very","extremely","unbelievably","incredibly","super"})
+T.addGrammarTable("dirty",{"dirty","filthy","gross"})
+T.addGrammarTable("veryDirty",{"#dirty#","#very# #dirty#"})
+
+
+--vending machine
 vendingMachineTimerMax=400
 vendingMachineTimer=vendingMachineTimerMax
 vendingMachineDowntime=0
-newProblem("No Vending Machine",nil,true,nil,100,nil,nil,{"There was nothing to eat"},1,nil,function(self,x,y,w)
+newProblem("No Vending Machine",nil,false,function() return time2>dayLen end,100,nil,nil,{"There was nothing to eat"},1,nil,function(self,x,y,w)
   if(vendingMachineTimer>0)then
     if(isBought("Bash Rats In Vending Machine")==false or  howManyMortalsStaying()>0)then
       vendingMachineTimer=vendingMachineTimer-1
@@ -390,47 +435,209 @@ newProblem("No Vending Machine",nil,true,nil,100,nil,nil,{"There was nothing to 
   end
 end,{"It had a vending machine"},3)
 
-
---COPS
-copNext=false
-newProblem("Cops",nil,false,function() return missingMortalsNo>2 end,100000,
-function(self,x,y,w)
-end,
-function(self)
-  if(math.random()>0.7)then copNext=true end
-  msg("check cop, nextcop:",Inspect(copNext))
-end,
-{"I kept getting questioned by police"},2,nil,nil,{"There were no cops"},4)
-
-
-
---did this function have something in?????
-newProblem("No Hotdogs",nil,true,function() return isBought("Vending Machine") end,100,function(self,x,y,w)end,nil,{"There was only vending machine to eat"},3,nil,nil,{"It had delicious hotdogs"},4)
-newUpgradeSpecial("Vending Machine",nil,10,function() return hasAppeared("No Vending Machine") end,{"No Vending Machine"},{"No Hotdogs"},function()
+newUpgradeSpecial("Vending Machine",nil,500,function() return hasAppeared("No Vending Machine") end,{"No Vending Machine"},{"No Hotdogs"},function()
   newNewsStory("Vending Machine","Got the new vending machine installed. You may have to restock every so often (watch out for rats, you're gonna get some rats). -"..getHelpInitial())
  end)
-newUpgradeSpecial("Get More Stock For Vending Machine",nil,40,function() return isBought("Vending Machine") end,nil,nil,function()
+newUpgradeSpecial("Get More Stock For Vending Machine",nil,700,function() return isBought("Vending Machine") and time2>dayLen*3 end,nil,nil,function()
   vendingMachineTimerMax=800
   newNewsStory("RE Vending Machine","Fixed a hole in the vending machine where the rats were getting in but they're stilling getting in. Might need a more permenant solution. -"..getHelpInitial())
 end)
-newUpgradeSpecial("Bash Rats In Vending Machine",nil,60,function() return isBought("Get More Stock For Vending Machine") end,nil,nil,function()
+newUpgradeSpecial("Bash Rats In Vending Machine",nil,1000,function() return isBought("Get More Stock For Vending Machine") and time2>dayLen*5 end,nil,nil,function()
   vendingMachineTimerMax=1300
   newNewsStory("RE RE Vending Machine","Rats dead. All dead. Whole generations of those things have died at my hands. -"..getHelpInitial())
 end)
 
 
-newUpgradeSpecial("Faster Cleaning",nil,200,function() return #newsFeed>18 end,nil,nil,function()
-  cleanSpeed=0.03
+--noises
+T.addGrammarTable("strange",{"strange","weird","scary","worrying","concerning","suspicious","odd"})
+T.addGrammarTable("noises",{"noises","sounds"})
+T.addGrammarTable("strangeNoises",{"#strange# #noises#","#noises#"})
+
+--newUpgrade("Investigate noises",10,3,{"I couldn't sleep because of #strangeNoises#","I kept hearing #strangeNoises#","There were always #strangeNoises#","I kept being woken up by #strangeNoises#"},15)
+
+newProblem("Noises",nil,false,function() return #newsFeed>6 end,100,nil,nil,{"I couldn't sleep because of #strangeNoises#","I kept hearing #strangeNoises#","There were always #strangeNoises#","I kept being woken up by #strangeNoises#"},1,nil,nil,{"It was peaceful"},4)
+newUpgrade("Investigate Noises",nil,100,function() return #newsFeed>3 and hasAppeared("Noises") end,{"Noises"},nil)
+
+  --bad dreams
+
+--have someone disappear/murdered?
+--_________________________________WEEK 2_______________________________________________
+--a missing person news story
+--symbols
+T.addGrammarTable("symbols",{"symbols","icons","imagery","patterns","emblems"})
+T.addGrammarTable("strangeSymbols",{"#strange# #symbols#","#symbols#"})
+T.addGrammarTable("painted",{"painted","written","scrawled","scratched"})
+T.addGrammarTable("partOfRoom",{"wall","bed","window","bathroom","mirror","floor","nightstand"})
+--newUpgrade("Clean weird symbols",10,3,{"I had #strangeSymbols# #painted# on my #partOfRoom#"},36)
+
+
+
+newProblem("Symbols",nil,false,function() return (time2>dayLen*7 and isBought("Investigate Noises")) end,100,nil,nil,{"I had #strangeSymbols# #painted# on my #partOfRoom#"},1,nil,nil,{"All the furniture was clean"},3)
+newUpgradeSpecial("Clean Up Symbols",nil,200,function() return hasAppeared("Symbols") end,{"Symbols"},nil,function()
+  newNewsStory("Dumb drawings","Hey, don't worry about those drawings and graffiti, I sorted it. Stupid teenagers. -"..getHelpInitial())
 end)
 
-newUpgradeSpecial("Bigger Waiting List",nil,2000,function() return #newsFeed>25 end,nil,nil,function()
-  customerLim=7
-end)
+--more murderers
+--hotdogs/cats
+newProblem("No Hotdogs",nil,true,function() return isBought("Vending Machine") and time2>dayLen*8 end,100,function(self,x,y,w)end,nil,{"There was only vending machine to eat"},3,nil,nil,{"It had delicious hotdogs"},4)
+hotdogs={}
+Hotdog=Class{
+  init=function(self,catId,catType,y)
+    self.x=motelXOffset-floors[1].width-150
+    self.y=y
+    self.catId=catId
+    self.catType=catType
+    self.active=true
+    if(self.catType==1)then
+      self.totalDist=(cats[self.catId].x)-self.x
+    else
+      self.totalDist=(cats2[self.catId].x)-self.x
+    end
+  end;
+  draw=function(self,x,y,w)
+    if(self.active)then
+      local catXDist=nil
 
-newUpgradeSpecial("Huge Waiting List",nil,4000,function() return (isBought("Bigger Waiting List") and #newsFeed>40) end,nil,nil,function()
-  customerLim=10
-end)
+      if(self.catType==1)then
+        catXDist=(cats[self.catId].x)-self.x
+      else
+        catXDist=(cats2[self.catId].x)-self.x
+      end
+      --love.window.showMessageBox("title", Inspect(catXDist), "info", true)
 
+      local selfPos=catXDist/self.totalDist
+      if(within(catXDist,0,25))then
+        self.active=false
+        if(self.catType==1)then
+          cats[self.catId].active=false
+
+        else
+          --msg(Inspect({self.catId,self.catType}),Inspect(cats2[self.catId]))
+          floors[cats2[self.catId].floorId].rooms[cats2[self.catId].roomId].possessionActive=false
+          cats2[self.catId].active=false
+
+        end
+      else
+        self.y=self.y-((selfPos*2)-1.15)*7
+        self.x=self.x+((1-math.sin(selfPos))*16)+9
+      end
+
+      love.graphics.draw(M.imgs.hotdog,self.x+x,self.y+y,math.sin(selfPos)*10,w,w,M.imgs.hotdog:getWidth()/2,M.imgs.hotdog:getHeight()/2)
+
+    end
+  end;
+}
+
+
+function newHotdog(catId,catType,y)
+  hotdogs[#hotdogs+1]=Hotdog(catId,catType,y)
+end;
+cats={}
+catAttack=false
+Cat=Class{
+  init=function(self,x,y,catType)
+    if(catType==1)then
+      self.id=#cats+1
+    else
+      self.id=#cats2+1
+    end
+    self.catType=catType
+    self.x=x
+    self.y=y
+    self.atHotDogStand=false
+    self.active=true
+    self.gettingHotdog=false
+    self.floorId=nil
+    self.roomId=nil
+  end;
+  draw=function(self,x,y,w)
+    local catImg=M.imgs.cat
+    if(evilPerc>0.7)then
+      catImg=M.imgs.cat3
+    elseif(evilPerc>0.5)then
+      catImg=M.imgs.cat2
+    end
+    if(catAttack)then
+      if(within(self.x,motelXOffset-floors[1].width-150,30))then
+        self.atHotDogStand=true
+      else
+        self.x=self.x-(math.random()*20)+6
+      end
+    else
+      --love.graphics.rectangle("line",x+self.x-5-M.imgs.cat:getWidth()/2,y+self.y-5-M.imgs.cat:getHeight()/2,30,45)
+      if(inBox(mouseX,mouseY,x+self.x-5-M.imgs.cat:getWidth()/2,y+self.y-5-M.imgs.cat:getHeight()/2,30,45) and hotdogClosedTimer==0 and self.gettingHotdog==false)then
+        newHotdog(self.id,self.catType,self.y)
+        self.gettingHotdog=true
+
+      end
+    end
+    if(self.active)then
+      love.graphics.draw(catImg,self.x+x,self.y+y,0,w,w,M.imgs.cat:getWidth()/2,M.imgs.cat:getHeight()/2)
+    end
+
+  end;
+}
+hotdogTop=math.ceil(math.random()*#mortalTop)
+hotdogBottom=math.ceil(math.random()*#mortalBottom)
+hotdogClosedTimer=0
+catLim=10
+
+--newProblem("Cats",nil,false,function() return true end,100,
+newProblem("Cats",nil,false,function() return isBought("Vending Machine") and isBought("Hire hotdog cart") end,100,
+function(self)
+  if(getNightTime() and getCatsActive(1)<catLim and catAttack==false)then
+    --if(math.floor(math.fmod(time2,dayLen/3))==0)then
+      --cats[#cats+1]=Cat(math.random(0,50),math.random(0,50))
+      --cats[#cats+1]=Cat(0,0)
+      cats[#cats+1]=Cat(newsFeedWidth+math.random(motelXOffset-100,motelXOffset+600),floors[1].height+math.random(0,15),1)
+      --love.window.showMessageBox("new cat"..Inspect(#cats), Inspect(cats), "info", true)
+    --end
+  end
+
+  if(inBox(mouseX,mouseY,280+motelXOffset,120+floors[1].height+motelYOffset,100,100) and love.mouse.isDown(1) and hotdogClosedTimer==0) then
+    catAttack=true
+  end
+
+  catsAttacked=true
+  for c=1,#cats do
+    if(cats[c].atHotDogStand==false)then
+      catsAttacked=false
+      break;
+    end
+  end
+  if(catsAttacked)then
+    cats={}
+    catAttack=false
+    evilPercAdd(0.001)
+    hotdogClosedTimer=10
+    hotdogTop=math.ceil(math.random()*#mortalTop)
+    hotdogBottom=math.ceil(math.random()*#mortalBottom)
+  end
+
+  if(hotdogClosedTimer>0) then hotdogClosedTimer=hotdogClosedTimer-1 end
+end,
+function(self,x,y,w)
+  --love.graphics.draw(M.imgs.cat,x,y,0,w,w,M.imgs.cat:getWidth()/2,M.imgs.cat:getHeight()/2)
+    --love.graphics.setColor(255, 0, 0, 255)
+    --love.graphics.rectangle("line",x+motelXOffset-100,y+floors[1].height+motelYOffset,100,100)
+    --love.graphics.rectangle("line",280+motelXOffset,120+floors[1].height+motelYOffset,100,100)
+    love.graphics.setColor(255, 255, 255, 255)
+    if(hotdogClosedTimer==0)then
+      love.graphics.draw(mortalBase, x-60-floors[1].width/2,y+floors[1].height-30, 0,5,5,5,5)
+      love.graphics.draw(mortalTop[hotdogTop], x-60-floors[1].width/2,y+floors[1].height-30, 0,5,5,5,5)
+      love.graphics.draw(mortalBottom[hotdogBottom], x-60-floors[1].width/2,y+floors[1].height-30, 0,5,5,5,5)
+    end
+    love.graphics.draw(M.imgs.hotdogcart,x-30-floors[1].width/2,y+floors[1].height,0,w/2,w/2,M.imgs.hotdogcart:getWidth(),M.imgs.hotdogcart:getHeight())
+  for i=1,#cats do
+    cats[i]:draw(x,y,w/2)
+  end
+  for i=1,#hotdogs do
+    hotdogs[i]:draw(x,y,w/2)
+  end
+end,{"I couldn't sleep because of cats"},3,nil,nil,{"There were no cats"},4)
+newUpgradeSpecial("Hire hotdog cart",nil,2000,function() return isBought("Vending Machine") and hasAppeared("No Hotdogs") end,{"No Hotdogs"},{"Cats"})
+
+--ac/slime
 temperature=20
 function getTemperature()
   hourFactor=math.sin(((getHours(time2)/24)*2*math.pi)+(math.pi/2))*-1
@@ -447,11 +654,11 @@ end;
 acOn=false
 acPower=1
 --slime timer
-acSlimer=100
+acSlimer=4000
 acSlimeUptime=0
 acClickTimer=0
-newProblem("No AC",nil,false,function() return true end,1,nil,nil,{"There was no AC"},2,nil,nil,{"It had AC"},3)
-newUpgradeSpecial("Air Conditioning",nil,100,function() return hasAppeared("No AC") end,{"No AC"},{"Slime"},function() end)
+newProblem("No AC",nil,false,function() return time2>dayLen*9.5 end,1,nil,nil,{"There was no AC"},2,nil,nil,{"It had AC"},3)
+newUpgradeSpecial("Air Conditioning",nil,4000,function() return hasAppeared("No AC") end,{"No AC"},{"Slime"},function() end)
 --newProblem("Slime",nil,false,function() return true end,10,
 newProblem("Slime",nil,false,function() return isBought("Air Conditioning") end,10,
   function(self)
@@ -459,7 +666,7 @@ newProblem("Slime",nil,false,function() return isBought("Air Conditioning") end,
     if(acClickTimer>0 and not love.mouse.isDown(1))then acClickTimer=acClickTimer-1 end
     if(inBox(mouseX,mouseY,motelXOffset+425,roofY-75,100,100) and love.mouse.isDown(1) and acClickTimer==0)then
        acClickTimer=1
-       if(acSlimer==0)then acSlimer=love.math.random(50,120) end
+       if(acSlimer==0)then acSlimer=love.math.random(1000,1200) end
         if(acOn)then
           acOn=false
           --msg("false","ye")
@@ -483,15 +690,142 @@ newProblem("Slime",nil,false,function() return isBought("Air Conditioning") end,
     end
   end,{"There was slime"},1,nil,nil,{"There was no slime"},3)
 
+--a cop or two
+copNext=false
+newProblem("Cops",nil,false,function() return missingMortalsNo>0 and time2>dayLen*8.5 end,100000,
+function(self,x,y,w)
+end,
+function(self)
+  if(math.random()>0.7)then copNext=true end
+  msg("check cop, nextcop:",Inspect(copNext))
+end,
+{"I kept getting questioned by police"},2,nil,nil,{"There were no cops"},4)
+--mound/statue (deactivated for a while)
 
-T.addGrammarTable("strange",{"strange","weird","scary","worrying","concerning","suspicious","odd"})
-T.addGrammarTable("noises",{"noises","sounds"})
-T.addGrammarTable("strangeNoises",{"#strange# #noises#","#noises#"})
+statueTimer=300
+--statueTimer=0
+statueHelpTimer=500
+--statueHelpTimer=30
+statueHelpCounter=0
+newProblem("Mound",nil,false,function() return time2>dayLen*10 end,100,nil,nil,{"I tripped over a mound in the parking lot"},2,nil,nil,{"The ground was smooth"},3)
+newProblem("Statue",nil,false,function() return isBought("Unearth Mound") end,10,
 
---newUpgrade("Investigate noises",10,3,{"I couldn't sleep because of #strangeNoises#","I kept hearing #strangeNoises#","There were always #strangeNoises#","I kept being woken up by #strangeNoises#"},15)
+function(self)
 
-newProblem("Noises",nil,false,function() return #newsFeed>3 end,100,nil,nil,{"I couldn't sleep because of #strangeNoises#","I kept hearing #strangeNoises#","There were always #strangeNoises#","I kept being woken up by #strangeNoises#"},1,nil,nil,{"It was peaceful"},4)
-newUpgrade("Investigate Noises",nil,10,function() return #newsFeed>3 and hasAppeared("Noises") end,{"Noises"},nil)
+  if(inBox(mouseX,mouseY,floorX+floors[1].width+100,floorY-100,100,100) and love.mouse.isDown(1) and statueTimer==0) then
+    evilPercAdd(0.001)
+    --statueTimer=20
+    statueTimer=1
+    cursorState="kill"
+    --turn off threats
+    statueHelpTimer=-1
+    --love.window.showMessageBox("Kill", "message", "info", true)
+  end
+  if(statueHelpTimer==0)then
+    if(statueHelpCounter<1)then
+      newNewsStory("A helpful message!","That shiny new statue can be used to eradicate a bad review!")
+    elseif(statueHelpCounter<2)then
+      newNewsStory("A friendly reminder!","You seem to be having problems with your reviews, try removing a review with the statue!")
+    elseif(statueHelpCounter<3)then
+      newNewsStory("A firm reminder.","This wouldn't be going so badly if you'd have used the statue.")
+    else
+      newNewsStory("GIVE IN TO THE STATUE","SUBMIT TO THE STATUE")
+    end
+    statueHelpTimer=clamp(50-(30*statueHelpCounter/4),20,50)
+    statueHelpCounter=statueHelpCounter+1
+  end
+  if(statueTimer>0) then statueTimer=statueTimer-1 end
+  if(statueHelpTimer>0) then statueHelpTimer=statueHelpTimer-1 end
+end,
+function(self,x,y,w)
+  --love.graphics.draw(M.imgs.cat,x,y,0,w,w,M.imgs.cat:getWidth()/2,M.imgs.cat:getHeight()/2)
+    love.graphics.setColor(255, 0, 0, 255)
+    --love.graphics.rectangle("line", floorX+floors[1].width+100,floorY-100,100,100)
+    love.graphics.setColor(255, 255, 255, 255)
+    if(statueTimer>0)then
+      love.graphics.draw(M.imgs.statue,x+30+floors[1].width,y+floors[1].height,0,w,w,M.imgs.statue:getWidth(),M.imgs.statue:getHeight())
+    else
+      love.graphics.draw(M.imgs.statueGlow,x+30+floors[1].width,y+floors[1].height,0,w,w,M.imgs.statueGlow:getWidth(),M.imgs.statueGlow:getHeight())
+    end
+end,{"There was a weird statue outside"},2,nil,nil,{"There was no weird statue outside"},1)
+newUpgradeSpecial("Unearth mound",nil,100,function() return hasAppeared("Mound") end,{"Mound"},{"Statue"})
+
+--_________________________________WEEK 3_______________________________________________
+--haunted floor
+--cats cause more problems
+cats2={}
+catLim2=10
+
+--newProblem("Cats2",nil,false,function() return true end,50,
+newProblem("Cats2",nil,false,function() return hasAppeared("Cats") and time2>dayLen*13 end,50,
+function(self)
+  --msg("cats2",Inspect(cats2))
+  if(getNightTime() and  getCatsActive(2)<catLim2)then
+    --spawn by door of unoccupied room
+    local catFloorId=getAvailableFloor()
+    if(catFloorId~=nil)then
+      local catRoomIds={}
+      catRoomIds=floors[catFloorId]:getVacantRooms()
+      --msg("rooms",Inspect(floors[catFloorId]:getVacantRooms()))
+      local catRoomId=nil
+      for j=1,#catRoomIds do
+        catRoomId=catRoomIds[j]
+        for i=1,#cats2 do
+          if(cats2[i].floorId==catFloorId and cats2[i].roomId==catRoomId and cats2[i].active)then
+            catRoomId=nil
+          end
+        end
+        if(catRoomId~=nil and floors[catFloorId]~=nil)then
+          --room possession activate
+          floors[catFloorId].rooms[catRoomId].possessionActive=true
+          --local catTarget={x=floors[catFloorId].rooms[catRoomId].x+(newsFeedWidth+motelXOffset)+roomWidth*4,y=floors[catFloorId].rooms[catRoomId].y+230+motelYOffset-((catFloorId-1)*floors[1].height)}
+          local catTarget={x=(-120)+floors[catFloorId].rooms[catRoomId].x,y=floors[1].height*(catFloorId-2)}
+          --cats2[#cats2+1]=Cat(0,0,2)
+          cats2[#cats2+1]=Cat(catTarget.x,-catTarget.y,2)
+          cats2[#cats2].floorId=catFloorId
+          cats2[#cats2].roomId=catRoomId
+        end
+
+      end
+
+    end
+  end
+end,
+function(self,x,y,w)
+  --love.graphics.draw(M.imgs.cat,x,y,0,w,w,M.imgs.cat:getWidth()/2,M.imgs.cat:getHeight()/2)
+    --love.graphics.setColor(255, 0, 0, 255)
+    --love.graphics.rectangle("line",x+motelXOffset-100,y+floors[1].height+motelYOffset,100,100)
+    --love.graphics.rectangle("line",280+motelXOffset,120+floors[1].height+motelYOffset,100,100)
+    love.graphics.setColor(255, 255, 255, 255)
+  for i=1,#cats2 do
+    cats2[i]:draw(x,y,w/2)
+  end
+end,{"There were cats blocking the doors","There were cats in the rooms"},3,nil,nil,{"There were no cats in front of doors"},4)
+
+function getCatsActive(catType)
+  --msg("1",Inspect(cats))
+  --msg("2",Inspect(cats2))
+  local catNo=0
+  if(catType==1)then
+    for i=1,#cats do
+      if(cats[i].active)then
+        catNo=catNo+1
+      end
+    end
+  else
+    for i=1,#cats2 do
+      if(cats2[i].active)then
+        catNo=catNo+1
+      end
+    end
+  end
+  return catNo
+end
+
+
+
+--a shadow
+
 
 flashlightStrength=0.04
 flashlightRad=30
@@ -634,7 +968,7 @@ Shadow=Class{
 }
 
 --newProblem("Shadows",nil,false,function() return true end,10,
-newProblem("Shadows",nil,false,function() return isBought("Investigate Noises") end,10,
+newProblem("Shadows",nil,false,function() return isBought("Investigate Noises") and time2>dayLen*16 end,10,
 function(self)
   --love.window.showMessageBox("shadow", "Update", "info", true)
   if(everyMS(200) and getNightTime() and #shadows<1)then shadows[#shadows+1]=Shadow(#shadows+1) end
@@ -650,6 +984,45 @@ function(self,x,y,w)
 end,
 {"I saw moving shadows"},2,nil,nil,{"There were no shadow people"},4)
 
+--more cops
+--temperature changes a bunch (ac upgrade)
+--more news stories
+--cultists begin to hang around
+
+--_________________________________WEEK 4_______________________________________________
+--can unhaunt floor
+--gremlins or whatever that hide and you have to check doors
+--shadows
+--mega ac upgrade
+--cultists begin to sacrifice
+--_________________________________WEEK 5_______________________________________________
+--everything gets worse
+--one last thing is introduced?
+
+
+
+
+
+
+
+
+
+
+
+
+newUpgradeSpecial("Faster Cleaning",nil,4000,function() return #newsFeed>30 end,nil,nil,function()
+  cleanSpeed=0.03
+end)
+
+newUpgradeSpecial("Bigger Waiting List",nil,8000,function() return #newsFeed>45 end,nil,nil,function()
+  customerLim=7
+end)
+
+newUpgradeSpecial("Huge Waiting List",nil,10000,function() return (isBought("Bigger Waiting List") and #newsFeed>60) end,nil,nil,function()
+  customerLim=10
+end)
+
+
 
 --newUpgrade("Install more lights",nil,10,function() return isBought("Investigate Noises") end,nil,nil)
 
@@ -662,218 +1035,56 @@ T.addGrammarTable("strangePeople",{"#strange# #people#","a #strange# #groupOfPeo
 
 
 
-T.addGrammarTable("symbols",{"symbols","icons","imagery","patterns","emblems"})
-T.addGrammarTable("strangeSymbols",{"#strange# #symbols#","#symbols#"})
-T.addGrammarTable("painted",{"painted","written","scrawled","scratched"})
-T.addGrammarTable("partOfRoom",{"wall","bed","window","bathroom","mirror","floor","nightstand"})
---newUpgrade("Clean weird symbols",10,3,{"I had #strangeSymbols# #painted# on my #partOfRoom#"},36)
 
-
-
-newProblem("Symbols",nil,false,function() return (#newsFeed>5 and isBought("Investigate Noises")) end,100,nil,nil,{"I had #strangeSymbols# #painted# on my #partOfRoom#"},1,nil,nil,{"All the furniture was clean"},3)
-newUpgradeSpecial("Clean Up Symbols",nil,10,function() return #newsFeed>8 and hasAppeared("Symbols") end,{"Symbols"},nil,function()
-  newNewsStory("Dumb drawings","Hey, don't worry about those drawings and graffiti, I sorted it. Stupid teenagers. -"..getHelpInitial())
-end)
 
 
 --newUpgradeFuncs("Search pit",1000,3,{"There's a pit"},0,function(self) upgrades[getUpgradeByName("Appease the gods").id]:makeUnavailable() end,nil)
 --newUpgradeFuncs("Appease the gods",0,3,{"This pit calls to me"},0,function(self) upgrades[getUpgradeByName("Search pit").id]:makeUnavailable() end,nil)
 
 
-hotdogs={}
-Hotdog=Class{
-  init=function(self,catId,y)
-    self.x=motelXOffset-floors[1].width-150
-    self.y=y
-    self.catId=catId
-    self.active=true
-    self.totalDist=(cats[self.catId].x)-self.x
-  end;
-  draw=function(self,x,y,w)
-    if(self.active)then
-      local catXDist=(cats[self.catId].x)-self.x
-      --love.window.showMessageBox("title", Inspect(catXDist), "info", true)
-
-      local selfPos=catXDist/self.totalDist
-      if(within(catXDist,0,25))then
-        self.active=false
-        cats[self.catId].active=false
-      else
-        self.y=self.y-((selfPos*2)-1.15)*7
-        self.x=self.x+((1-math.sin(selfPos))*16)+9
-      end
-
-      love.graphics.draw(M.imgs.hotdog,self.x+x,self.y+y,math.sin(selfPos)*10,w,w,M.imgs.hotdog:getWidth()/2,M.imgs.hotdog:getHeight()/2)
-
-    end
-  end;
-}
-
-function newHotdog(catId,y)
-  hotdogs[#hotdogs+1]=Hotdog(catId,y)
-end;
-cats={}
-catAttack=false
-Cat=Class{
-  init=function(self,x,y)
-    self.id=#cats+1
-    self.x=x
-    self.y=y
-    self.atHotDogStand=false
-    self.active=true
-    self.gettingHotdog=false
-  end;
-  draw=function(self,x,y,w)
-    local catImg=M.imgs.cat
-    if(evilPerc>0.7)then
-      catImg=M.imgs.cat3
-    elseif(evilPerc>0.5)then
-      catImg=M.imgs.cat2
-    end
-    if(catAttack)then
-      if(within(self.x,motelXOffset-floors[1].width-150,30))then
-        self.atHotDogStand=true
-      else
-        self.x=self.x-(math.random()*20)+6
-      end
-    else
-      --love.graphics.rectangle("line",x+self.x-5-M.imgs.cat:getWidth()/2,y+self.y-5-M.imgs.cat:getHeight()/2,30,45)
-      if(inBox(mouseX,mouseY,x+self.x-5-M.imgs.cat:getWidth()/2,y+self.y-5-M.imgs.cat:getHeight()/2,30,45) and hotdogClosedTimer==0 and self.gettingHotdog==false)then
-        newHotdog(self.id,self.y)
-        self.gettingHotdog=true
-      end
-    end
-    if(self.active)then
-      love.graphics.draw(catImg,self.x+x,self.y+y,0,w,w,M.imgs.cat:getWidth()/2,M.imgs.cat:getHeight()/2)
-    end
-
-  end;
-}
-hotdogTop=math.ceil(math.random()*#mortalTop)
-hotdogBottom=math.ceil(math.random()*#mortalBottom)
-hotdogClosedTimer=0
-
-newProblem("Cats",nil,false,function() return isBought("Vending Machine") and #newsFeed>5 and isBought("Hire hotdog cart") end,100,
-function(self)
-  if(getNightTime() and #cats<10 and catAttack==false)then
-    --if(math.floor(math.fmod(time2,dayLen/3))==0)then
-      --cats[#cats+1]=Cat(math.random(0,50),math.random(0,50))
-      --cats[#cats+1]=Cat(0,0)
-      cats[#cats+1]=Cat(newsFeedWidth+math.random(motelXOffset-100,motelXOffset+600),floors[1].height+math.random(0,15))
-      --love.window.showMessageBox("new cat"..Inspect(#cats), Inspect(cats), "info", true)
-    --end
-  end
-  if(inBox(mouseX,mouseY,280+motelXOffset,120+floors[1].height+motelYOffset,100,100) and love.mouse.isDown(1) and hotdogClosedTimer==0) then
-    catAttack=true
-  end
-
-  catsAttacked=true
-  for c=1,#cats do
-    if(cats[c].atHotDogStand==false)then
-      catsAttacked=false
-      break;
-    end
-  end
-  if(catsAttacked)then
-    cats={}
-    catAttack=false
-    evilPercAdd(0.001)
-    hotdogClosedTimer=10
-    hotdogTop=math.ceil(math.random()*#mortalTop)
-    hotdogBottom=math.ceil(math.random()*#mortalBottom)
-  end
-
-  if(hotdogClosedTimer>0) then hotdogClosedTimer=hotdogClosedTimer-1 end
-end,
-function(self,x,y,w)
-  --love.graphics.draw(M.imgs.cat,x,y,0,w,w,M.imgs.cat:getWidth()/2,M.imgs.cat:getHeight()/2)
-    --love.graphics.setColor(255, 0, 0, 255)
-    --love.graphics.rectangle("line",x+motelXOffset-100,y+floors[1].height+motelYOffset,100,100)
-    --love.graphics.rectangle("line",280+motelXOffset,120+floors[1].height+motelYOffset,100,100)
-    love.graphics.setColor(255, 255, 255, 255)
-    if(hotdogClosedTimer==0)then
-      love.graphics.draw(mortalBase, x-60-floors[1].width/2,y+floors[1].height-30, 0,5,5,5,5)
-      love.graphics.draw(mortalTop[hotdogTop], x-60-floors[1].width/2,y+floors[1].height-30, 0,5,5,5,5)
-      love.graphics.draw(mortalBottom[hotdogBottom], x-60-floors[1].width/2,y+floors[1].height-30, 0,5,5,5,5)
-    end
-    love.graphics.draw(M.imgs.hotdogcart,x-30-floors[1].width/2,y+floors[1].height,0,w/2,w/2,M.imgs.hotdogcart:getWidth(),M.imgs.hotdogcart:getHeight())
-  for i=1,#cats do
-    cats[i]:draw(x,y,w/2)
-  end
-  for i=1,#hotdogs do
-    hotdogs[i]:draw(x,y,w/2)
-  end
-end,{"I couldn't sleep because of cats"},3,nil,nil,{"There were no cats"},4)
-newUpgradeSpecial("Hire hotdog cart",nil,10,function() return isBought("Vending Machine") and #newsFeed>5 and hasAppeared("No Hotdogs") end,{"No Hotdogs"},{"Cats"})
---newUpgradeSpecial("Hire hotdog cart",nil,10,function() return true end,{"No Hotdogs"},{"Cats"})
-
-
---statueTimer=30
-statueTimer=0
---statueHelpTimer=50
-statueHelpTimer=30
-statueHelpCounter=0
-newProblem("Mound",nil,false,function() return #newsFeed>4 end,100,nil,nil,{"I tripped over a mound in the parking lot"},2,nil,nil,{"The ground was smooth"},3)
-newProblem("Statue",nil,false,function() return isBought("Unearth Mound") end,100,
-
-function(self)
-
-  if(inBox(mouseX,mouseY,floorX+floors[1].width+100,floorY-100,100,100) and love.mouse.isDown(1) and statueTimer==0) then
-    evilPercAdd(0.001)
-    --statueTimer=20
-    statueTimer=1
-    cursorState="kill"
-    --turn off threats
-    statueHelpTimer=-1
-    --love.window.showMessageBox("Kill", "message", "info", true)
-  end
-  if(statueHelpTimer==0)then
-    if(statueHelpCounter<1)then
-      newNewsStory("A helpful message!","That shiny new statue can be used to eradicate a bad review!")
-    elseif(statueHelpCounter<2)then
-      newNewsStory("A friendly reminder!","You seem to be having problems with your reviews, try removing a review with the statue!")
-    elseif(statueHelpCounter<3)then
-      newNewsStory("A firm reminder.","This wouldn't be going so badly if you'd have used the statue.")
-    else
-      newNewsStory("GIVE IN TO THE STATUE","SUBMIT TO THE STATUE")
-    end
-    statueHelpTimer=clamp(50-(30*statueHelpCounter/4),20,50)
-    statueHelpCounter=statueHelpCounter+1
-  end
-  if(statueTimer>0) then statueTimer=statueTimer-1 end
-  if(statueHelpTimer>0) then statueHelpTimer=statueHelpTimer-1 end
-end,
-function(self,x,y,w)
-  --love.graphics.draw(M.imgs.cat,x,y,0,w,w,M.imgs.cat:getWidth()/2,M.imgs.cat:getHeight()/2)
-    love.graphics.setColor(255, 0, 0, 255)
-    --love.graphics.rectangle("line", floorX+floors[1].width+100,floorY-100,100,100)
-    love.graphics.setColor(255, 255, 255, 255)
-    if(statueTimer>0)then
-      love.graphics.draw(M.imgs.statue,x+30+floors[1].width,y+floors[1].height,0,w,w,M.imgs.statue:getWidth(),M.imgs.statue:getHeight())
-    else
-      love.graphics.draw(M.imgs.statueGlow,x+30+floors[1].width,y+floors[1].height,0,w,w,M.imgs.statueGlow:getWidth(),M.imgs.statueGlow:getHeight())
-    end
-end,{"There was a weird statue outside"},2,nil,nil,{"There was no weird statue outside"},1)
-newUpgradeSpecial("Unearth mound",nil,10,function() return hasAppeared("Mound") end,{"Mound"},{"Statue"})
 
 
 
+
+
+
+
+
+
+-----GENERAL MOTEL STUFF------------------------------------------------------------------------------------------
 alphabet="abcdefghijklmnopqrstuvwxyz"
 floors={}
 Room=Class{
-  init=function(self,id,x,y)
+  init=function(self,id,x,y,floorId)
     self.id=id
+    self.floorId=floorId
     self.currentMortal=nil
     self.x=x
     self.y=y
+    self.open=-1
+    self.possessionActive=false
+    --self.clicked=false
   end;
   print=function(self,x,y,w)
-    love.graphics.draw(M.imgs.door,x+self.x,y+self.y,0,w,w)
+    love.graphics.setColor(255,255,255)
+    if(self.possessionActive)then love.graphics.setColor(0,255,0) end
+    if(self.open==1)then
+      if(floors[self.floorId].cleanScore<0)then
+        love.graphics.draw(M.imgs.doorOpenBloody,x+self.x,y+self.y,0,w,w)
+      else
+        love.graphics.draw(M.imgs.doorOpen,x+self.x,y+self.y,0,w,w)
+      end
+    else
+      love.graphics.draw(M.imgs.door,x+self.x,y+self.y,0,w,w)
+    end
+    love.graphics.setColor(255,255,255)
     if(inBox(mouseX,mouseY,x+self.x,y+self.y,35,50))then
       if(cursorState~="kill")then
         --if(stayPercentage>0)then
           roomMenuId=self.id
         --end
+        --if(love.mouse.isDown(1))then if(self.clicked==false) then self.open=self.open*-1 self.clicked=true end else self.clicked=false end
+        if(love.mouse.isDown(1))then self.open=1 else self.open=-1 end
       else
         if(love.mouse.isDown(1) and self.currentMortal~=nil)then
           mortals[self.currentMortal]:goMissing()
@@ -887,10 +1098,11 @@ Room=Class{
       love.graphics.rectangle("fill",x+self.x,y+self.y-10,35*stayPercentage,6)
 
 
+      if(self.possessionActive and mortals[self.currentMortal].state~="ENTERING")then mortals[self.currentMortal].possessed=true end
 
-      love.graphics.setColor(255,0,0,255)
+      --love.graphics.setColor(255,0,0,255)
       --love.graphics.rectangle("line",x+self.x,y+self.y,35,50)
-        love.graphics.setColor(255,255,255,255)
+      love.graphics.setColor(255,255,255,255)
 
 
 
@@ -921,7 +1133,7 @@ Floor=Class{
         self.bufferHeight=roomHeight
       end
       for r=1,roomNo do
-        self:addRoom(-self.bufferWidth/2-roomWidth/2+((r-1)*roomWidth+ (self.bufferWidth*(r)) ),self.bufferHeight)
+        self:addRoom(-self.bufferWidth/2-roomWidth/2+((r-1)*roomWidth+ (self.bufferWidth*(r)) ),self.bufferHeight,self.id)
       end
       self.vacancy=true
     end
@@ -935,6 +1147,15 @@ Floor=Class{
     end
     return false
   end;
+  getVacantRooms=function(self)
+    local rooms={}
+    for r=1,#self.rooms do
+      if(self.rooms[r].currentMortal==nil)then
+        rooms[#rooms+1]=r
+      end
+    end
+    return rooms
+  end;
   getVacantRoom=function(self)
     for r=1,#self.rooms do
       if(self.rooms[r].currentMortal==nil)then
@@ -943,8 +1164,8 @@ Floor=Class{
     end
     return nil
   end;
-  addRoom=function(self,x,y)
-    self.rooms[#self.rooms+1]=Room(#self.rooms+1,x,y)
+  addRoom=function(self,x,y,floorId)
+    self.rooms[#self.rooms+1]=Room(#self.rooms+1,x,y,floorId)
   end;
   makeDirtier=function(self,dirtScore)
     if(self.cleanScore>0)then
@@ -1008,17 +1229,23 @@ Floor=Class{
           occupantInfo="staying"
         end
 
-        queueMenuBox({"Occupant ("..occupantInfo..") ",{mortals[self.rooms[roomMenuId].currentMortal].stayTimer,mortals[self.rooms[roomMenuId].currentMortal].stay},mortals[self.rooms[roomMenuId].currentMortal].name,mortals[self.rooms[roomMenuId].currentMortal].bio,unpack(mortals[self.rooms[roomMenuId].currentMortal]:getStats())},10,fW,fH,mX,mY,150)
-
+        if(self.rooms[roomMenuId].open==-1)then
+          queueMenuBox({"Occupant ("..occupantInfo..") ",{mortals[self.rooms[roomMenuId].currentMortal].stayTimer,mortals[self.rooms[roomMenuId].currentMortal].stay},mortals[self.rooms[roomMenuId].currentMortal].name,mortals[self.rooms[roomMenuId].currentMortal].bio,unpack(mortals[self.rooms[roomMenuId].currentMortal]:getStats())},10,fW,fH,mX,mY,150)
+        end
       else
         --draw non occupy menu
-        queueMenuBox({"No Occupant"},10,fW,fH,mX,mY,150)
+
+        if(self.rooms[roomMenuId].open==-1)then
+          queueMenuBox({"No Occupant"},10,fW,fH,mX,mY,150)
+        end
       end
 
     else
       --if not hovering over room, check hovering over floor
       if(inBox(mX,mY,x,y,self.width,self.height))then
-        queueMenuBox({"Floor "..self.id,self:getCleanString(),{self.cleanScore,1}},10,fW,fH,mX,mY,150)
+        if(roomMenuId==nil or self.rooms[roomMenuId].open==-1)then
+          queueMenuBox({"Floor "..self.id,self:getCleanString(),{self.cleanScore,1}},10,fW,fH,mX,mY,150)
+        end
         if(love.mouse.isDown(1))then
           self.cleanScore=clamp(self.cleanScore+cleanSpeed,-1,1)
         end
@@ -1088,16 +1315,16 @@ newFloor(4)
 addFloor=function(cost,roomNo)
   local floorNo=#floors
   newProblem(string.format("Old F%d",#floors),floorNo,true,nil,100,nil,nil,{"It was drab"},2,nil,nil,{"It was renovated"},4)
-  newUpgrade(string.format("Renovate F%d",#floors),floorNo,10,nil,{string.format("Old F%d",#floors)},nil)
+  newUpgrade(string.format("Renovate F%d",#floors),floorNo,cost/3,nil,{string.format("Old F%d",#floors)},nil)
   if(#floors>=2)then
     newProblem(string.format("No Stairs F%d",#floors),floorNo,true,nil,100,nil,nil,{"I couldn't get to my room"},1,nil,function(self,x,y,w) local xDir=1 local xBuffer=0 local curFloorY=y-((floors[floorNo].height-2)*(floorNo-2)) if(math.fmod(floorNo,2)~=0)then xDir=-1 xBuffer=-M.imgs.stairs:getWidth()*w end love.graphics.line(x-floors[1].width/2-6,curFloorY,x-floors[1].width/2-6-M.imgs.stairs:getWidth()*w,curFloorY) love.graphics.draw(M.imgs.stairs,x-floors[1].width/2-6+xBuffer,curFloorY-6,0,w*xDir,w,M.imgs.stairs:getWidth()) end,{"It had stairs"},3)
-    newUpgrade(string.format("Stairs to F%d",#floors),floorNo,10,nil,{string.format("No Stairs F%d",#floors)},nil)
+    newUpgrade(string.format("Stairs to F%d",#floors),floorNo,cost/2,nil,{string.format("No Stairs F%d",#floors)},nil)
 
     newProblem(string.format("No Railing F%d",#floors),floorNo,true,nil,100,nil,nil,{"There was no railing"},1,nil,function(self,x,y,w) local curFloorY=y-((floors[floorNo].height-2)*(floorNo-2)) love.graphics.draw(M.imgs.railing,x,curFloorY,0,w,w,M.imgs.railing:getWidth()/2,M.imgs.railing:getHeight()/2) end,{"The railing was nice"},3)
-    newUpgrade(string.format("Railing F%d",#floors),floorNo,10,nil,{string.format("No Railing F%d",#floors)},nil)
+    newUpgrade(string.format("Railing F%d",#floors),floorNo,cost/4,nil,{string.format("No Railing F%d",#floors)},nil)
   end
 
   newUpgradeSpecial(string.format("Build Floor %d",#floors+1),nil,cost,nil,nil,nil,function() newFloor(roomNo) addFloor(cost*5,roomNo) end)
 end
-addFloor(20,4)
+addFloor(100,4)
 --love.window.showMessageBox("floor", Inspect(floors), "info", true)

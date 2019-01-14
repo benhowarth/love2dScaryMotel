@@ -76,6 +76,7 @@ flashlightShader = love.graphics.newShader [[
       extern number h;
       extern number rad;
       extern number bleed;
+      extern number strength;
       vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 pixel_coords)
       {
           vec2 st=vec2(pixel_coords.x/w,pixel_coords.y/h);
@@ -93,9 +94,9 @@ flashlightShader = love.graphics.newShader [[
           pixelColor.r=pixelColor.r;
           pixelColor.g=pixelColor.g;
           pixelColor.b=pixelColor.b;
-          color.r=color.r*1.0/smoothstep(rad-bleed,rad+bleed,dist);
-          color.g=color.g*1.0/smoothstep(rad-bleed,rad+bleed,dist);
-          color.b=color.b*1.0/smoothstep(rad-bleed,rad+bleed,dist);
+          color.r=color.r+(1.0/smoothstep(rad-bleed,rad+bleed,dist))*strength;
+          color.g=color.g+(1.0/smoothstep(rad-bleed,rad+bleed,dist))*strength;
+          color.b=color.b+(1.0/smoothstep(rad-bleed,rad+bleed,dist))*strength;
           return pixelColor*color;
       }
   ]]

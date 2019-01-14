@@ -82,7 +82,16 @@ function HSL(h,s,l,a)
   return (r+m)*255,(g+m)*255,(b+m)*255,a
 end
 
-function drawTextInBoxChars(text,fW,fH,x,y,w)
+function drawTextInBoxChars(text,fW,fH,x,y,w,hClip,noPrint)
+	if(hClip~=nil)then
+
+    local stencil = function()
+      love.graphics.rectangle("fill", x,y,w,hClip)
+    end
+
+    love.graphics.stencil(stencil,"replace",1)
+    love.graphics.setStencilTest("greater", 0)
+	end
 	--round up (length of string * char width) / width of box
 	lineNo=math.ceil((#text*fW)/w)
 	charPerLine=math.ceil(#text/lineNo)
@@ -95,13 +104,25 @@ function drawTextInBoxChars(text,fW,fH,x,y,w)
 		stringToPrint=stringToPrint..string.sub(text, i, i)
 	end
 
-	love.graphics.print(stringToPrint, x, y)
+	--if(noPrint~=nil)then love.graphics.print(stringToPrint, x, y) end
 
 	--return height
+	if(hClip~=nil)then
+		love.graphics.setStencilTest()
+	end
 	return lineNo*fH
 end
 
-function drawTextInBox(text,fW,fH,x,y,w)
+function drawTextInBox(text,fW,fH,x,y,w,hClip,noPrint)
+	if(hClip~=nil)then
+
+    local stencil = function()
+      love.graphics.rectangle("fill", x,y,w,hClip)
+    end
+
+    love.graphics.stencil(stencil,"replace",1)
+    love.graphics.setStencilTest("greater", 0)
+	end
 	--round up (length of string * char width) / width of box
 	charsInLine=0
 	lineNo=1
@@ -123,8 +144,13 @@ function drawTextInBox(text,fW,fH,x,y,w)
 		end
 	end
 	stringToPrint=stringToPrint..string.sub(text,#text,#text)
-	love.graphics.print(stringToPrint, x, y)
 
+		if(noPrint~=true)then love.graphics.print(stringToPrint, x, y) end
+
+		--return height
+		if(hClip~=nil)then
+			love.graphics.setStencilTest()
+		end
 	--return height
 	return lineNo*fH
 end

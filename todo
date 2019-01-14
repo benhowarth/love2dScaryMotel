@@ -1,3 +1,7 @@
+x=done
+x?=done?
+xx=cancelled
+
 fix sign display
 have mortals move from room properly
 stop mortals sometimes flying into the sky from stairs(move interval problem?) ITS TO DO WITH THE Y OFFSET
@@ -5,13 +9,17 @@ fix stair access
 
 change window icon?
 
-fix upgrade chain (problems for hotdogs appearing before vending machine bought)
-fix review redacting lines to see a bit of the text
+fix upgrade chain (problems for hotdogs appearing before vending machine bought) x?
+fix review redacting lines to see a bit of the text xx
+fix review displaying nothing for frag or @posfrag1 or @posfrag2
+fix vending machine was always fully stocked
 add missing person mechanic when statue kills someone
 add cops
 add cop review
 add threatening 'help' messages
 
+--fix table remove cats
+--fix cats2 not spawn until mortals coming
 
 add murderer review
 add to cats mechanic (make affect review/have em block things)
@@ -25,6 +33,7 @@ add ac upgrades
 add temperature to review
 
 fix rating for noisey (and all? something to do with positive negative?)
+fix rating for all reviews
 
 change stats to stars?
 

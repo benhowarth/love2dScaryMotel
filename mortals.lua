@@ -18,15 +18,25 @@ Review=Class{
     self.mortalId=mortalId
     self.date=time2
     self.redacted=false
+    self.heightMult=0
   end;
   print=function(self,fW,fH,x,y,w)
 
 
-
-    h=drawTextInBox(self.text,fW,fH,x+reviewPicWidth+20,y+10,w-reviewPicWidth-20)
+    if(self.heightMult<1)then self.heightMult=self.heightMult+newsFeedSpeed end
+    h=drawTextInBox(self.text,fW,fH,x+reviewPicWidth+20,y+10,w-reviewPicWidth-20,nil,true)
     if(h<reviewPicWidth+fH+50)then h=reviewPicWidth+fH+50 end
 
     h=h+fH*3
+    h=h*self.heightMult
+
+
+      local stencil = function()
+        love.graphics.rectangle("fill", x-2,y-2,w+4,h+4)
+      end
+
+      love.graphics.stencil(stencil,"replace",1)
+      love.graphics.setStencilTest("greater", 0)
 
     --love.graphics.setColor(20,20,20,255)
     love.graphics.setColor(0,0,0,255)
@@ -47,7 +57,7 @@ Review=Class{
 
     love.graphics.rectangle("line", x+10, y+10, reviewPicWidth, reviewPicHeight)
 
-    drawTextInBox(self.text,fW,fH,x+reviewPicWidth+20,y+10,w-reviewPicWidth-20)
+    drawTextInBox(self.text,fW,fH,x+reviewPicWidth+20,y+10,w-reviewPicWidth-20,h-5)
 
 
 
@@ -93,7 +103,7 @@ Review=Class{
         --draw non redacted bio
       --else
         --draw redacted bio
-    if(inBox(mX,mY,x+10,y+10,reviewPicWidth, reviewPicHeight))then
+    if(inBox(mX,mY,x+10,y+10,reviewPicWidth, reviewPicHeight) and self.heightMult>=1)then
 
 
 
@@ -120,12 +130,15 @@ Review=Class{
     end
     --end of bio draw
 
+    love.graphics.setStencilTest()
+
 
 
     return h
   end;
 }
 mortalBase=love.graphics.newImage("res/mortal.png")
+mortalCatEyes=love.graphics.newImage("res/mortalCatEyes.png")
 mortalTop={}
 mortalTop[1]=love.graphics.newImage("res/mortalTop1.png")
 mortalTop[2]=love.graphics.newImage("res/mortalTop2.png")
@@ -158,10 +171,13 @@ Mortal=Class{
 
     if(self.type=="cop")then
       self.bio=T.parse("#copBio#")
+      self.helloString=T.parse("#copHello#")
     elseif(self.type=="murderer")then
       self.bio=T.parse("#creepyBio#")
+      self.helloString=T.parse("#creepyHello#")
     else
       self.bio=T.parse("#bio#")
+      self.helloString=T.parse("#hello#")
     end
 
 
@@ -172,7 +188,7 @@ Mortal=Class{
     self.rating=0
     self.x=newsFeedWidth+10
     --self.y=270
-    self.y=260
+    self.y=motelGroundY
     self.state="WAITING"
     self.direction=1
     --self.stay=(math.random()*300)+100
@@ -184,16 +200,21 @@ Mortal=Class{
     --love.window.showMessageBox(self.name, string.format("Floor %d\nRoom %d",self.floorId,self.roomId), "info", true)
     self.top=math.ceil(math.random()*#mortalTop)
     self.bottom=math.ceil(math.random()*#mortalBottom)
+
+    self.possessed=false
   end;
   update=function(self)
+    --msg("y offset",Inspect(motelYOffset))
     --entering
     if(self.state=="ENTERING")then
       if(isRoomAccessible(self.floorId)) then
+        self.target={x=floors[self.floorId].rooms[self.roomId].x+(newsFeedWidth+motelXOffset)+roomWidth*4,y=floors[self.floorId].rooms[self.roomId].y+230+motelYOffset-((self.floorId-1)*floors[1].height)}
+
         --love.window.showMessageBox(self.name, Inspect(self.y).." vs "..Inspect(self.target.y).."\n"..Inspect(within(self.y,self.target.y,70)), "info", true)
-        if(within(self.x,self.target.x,20) and within(self.y,self.target.y,20))then
+        if(within(self.x,self.target.x,20) and within(self.y+motelYOffset,self.target.y,20))then
         --if(self.x>newsFeedWidth+80)then
           self.state="STAYING"
-        elseif(within(self.x,newsFeedWidth+motelXOffset,10) and not(within(self.y,self.target.y,20)))then
+        elseif(within(self.x,newsFeedWidth+motelXOffset,10) and not(within(self.y+motelYOffset,self.target.y,20)))then
         --elseif(within(self.x,newsFeedWidth+motelXOffset,50) and not(within(self.y,self.target.y,20)))then
           self.y=self.y-3
           --love.window.showMessageBox(self.name, "climns"..Inspect({within(self.x,newsFeedWidth+motelXOffset,50),not(within(self.y,self.target.y,20))}).."\n"..Inspect(self.target).." real:"..Inspect(self.x)..", "..Inspect(self.y), "info", true)
@@ -209,6 +230,7 @@ Mortal=Class{
 
       if(self.type=="cop")then
         --investigate
+        
       elseif(self.type=="murderer")then
         --murder a person?
         if(everyMS(100) and math.random()>0.8)then
@@ -224,6 +246,7 @@ Mortal=Class{
       end
     --leaving
     elseif(self.state=="LEAVING")then
+      if(self.y<motelGroundY)then self.y=self.y*1.05 end
       self.x=self.x+4
       if(self.x>window.w)then
         self.state="LEFT"
@@ -231,14 +254,46 @@ Mortal=Class{
     end
   end;
   draw=function(self,xOffset,yOffset)
-    if(self.state~="LEFT" and self.state~="STAYING" and self.state~="MISSING" and self.state~="WAITING")then
-      love.graphics.setColor(255, 255, 255, 255)
-      love.graphics.draw(mortalBase, self.x+xOffset, self.y+yOffset, 0,5,5,5,5)
-      love.graphics.draw(mortalTop[self.top], self.x+xOffset, self.y+yOffset, 0,5,5,5,5)
-      love.graphics.draw(mortalBottom[self.bottom], self.x+xOffset, self.y+yOffset, 0,5,5,5,5)
-      --love.graphics.rectangle("fill", self.x, self.y, 30, 30)
-      love.graphics.print(string.format("%d.%d",self.floorId,self.roomId), self.x+xOffset, self.y+yOffset)
+    if(self.state~="LEFT" and (self.state~="STAYING" or floors[self.floorId].rooms[self.roomId].open==1) and self.state~="MISSING" and self.state~="WAITING")then
+      local scale=5
+      local yAdditionalOffset=0
+      --if(floors[self.floorId].rooms[self.roomId].open==1 and self.state=="STAYING")then scale=3 end
+      if(self.state=="STAYING")then
+        if(not self.possessed)then
+          queueMenuBox({self.helloString},0,fontCharWidth,fontCharHeight, self.x+xOffset+30, self.y+yOffset-30,200)
+          love.graphics.setColor(255, 255, 255, 255)
+        else
+          scale=2.5
+          yAdditionalOffset=-10
+          love.graphics.setColor(150, 150, 150, 255)
+        end
+      end
+      love.graphics.draw(mortalBase, self.x+xOffset, self.y+yOffset+yAdditionalOffset, 0,scale,scale,scale,scale)
+      love.graphics.draw(mortalTop[self.top], self.x+xOffset, self.y+yOffset+yAdditionalOffset, 0,scale,scale,scale,scale)
+      love.graphics.draw(mortalBottom[self.bottom], self.x+xOffset, self.y+yOffset+yAdditionalOffset, 0,scale,scale,scale,scale)
+      if(self.possessed)then
+        love.graphics.draw(mortalCatEyes, self.x+xOffset, self.y+yOffset+yAdditionalOffset, 0,scale,scale,scale,scale)
+      end
+      if(self.state=="LEAVING")then
+        --love.graphics.rectangle("fill", self.x, self.y, 30, 30)
+        for c,cat in pairs(cats)do
+          --love.graphics.rectangle("line",motelXOffset+(floors[1].width*2)+cat.x+30,cat.y+(floors[1].height*2)+60,30,45)
+          if(cat.active and math.random()>0.985)then
+            if(inBox(self.x,self.y,motelXOffset+(floors[1].width*2)+cat.x+30,cat.y+(floors[1].height*2)+60,30,45))then
+              self:goMissing()
+              --msg(self.name..Inspect(cat.id),"missing")
+            end
+          end
+        end
+      end
+      --love.graphics.print(string.format("%d.%d",self.floorId,self.roomId), self.x+xOffset, self.y+yOffset)
     end
+      --if(self.target~=nil)then
+        --love.graphics.setColor(255,0,0,255)
+        --love.graphics.circle("fill",self.target.x,self.target.y,10)
+        --love.graphics.setColor(255,255,255,255)
+        --love.graphics.circle("fill",self.x,self.y+motelYOffset,10)
+      --end
   end;
   getStatsString=function(self)
     local statsString="\n "
@@ -291,8 +346,10 @@ Mortal=Class{
     end
     --love.window.showMessageBox("neg vs pos number", "fragNumber: "..fragNumber.."\nneg: "..negNum.."\npos: "..posNum.."\nneg frags:"..#self.reviewFragsNeg.."\npos frags:"..#self.reviewFragsPos, "info", true)
 
-
-    if(#self.reviewFragsNeg~=0 or #self.reviewFragsPos~=0)then
+    if(self.possessed)then
+      self.reviewString="#possessedGood#"
+      self.rating=5
+    elseif(#self.reviewFragsNeg~=0 or #self.reviewFragsPos~=0)then
       self.rating=0
       for i=1,negNum do
         if(self.reviewFragsNeg[i].problemToNotify~=nil) then
@@ -336,7 +393,7 @@ Mortal=Class{
     self.roomId=floors[floorId]:getVacantRoom()
     if(self.roomId~=nil)then
       floors[self.floorId].rooms[self.roomId]:assignMortal(self.id)
-      self.target={x=floors[self.floorId].rooms[self.roomId].x+(newsFeedWidth+motelXOffset)+roomWidth/2,y=floors[self.floorId].rooms[self.roomId].y+230+motelYOffset-((floorId-1)*floors[1].height)}
+      self.target={x=floors[self.floorId].rooms[self.roomId].x+(newsFeedWidth+motelXOffset)+roomWidth*4,y=floors[self.floorId].rooms[self.roomId].y+230+motelYOffset-((floorId-1)*floors[1].height)}
     end
   end;
   leave=function(self)
@@ -395,7 +452,7 @@ Mortal=Class{
 
 
 --mortalTypes={{"normal",0.9},{"murderer",0.06},{"cop",0.04}}
-mortalTypes={{"normal",0.94},{"murderer",0.05},{"cop",0.01}}
+mortalTypes={{"normal",0.98},{"murderer",0.015},{"cop",0.005}}
 decideMortalType=function()
   local mortalProbR=love.math.random()
   local sum=0

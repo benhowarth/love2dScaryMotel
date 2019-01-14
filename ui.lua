@@ -132,11 +132,11 @@ function drawClock(x,y,rad,hour,min,printAMPM)
   end
   love.graphics.setLineWidth(5)
   local hourAng=-((hour/12)*2*math.pi)-math.pi
-  love.graphics.setColor(255,0,0,255)
-  love.graphics.line(x, y, x+rad*math.sin(hourAng),y+rad*math.cos(hourAng))
   local minAng=-((min/60)*2*math.pi)-math.pi
+  love.graphics.setColor(255,0,0,255)
+  love.graphics.line(x, y, x+rad*math.sin(minAng),y+rad*math.cos(minAng))
   love.graphics.setColor(255,255,255)
-  love.graphics.line(x, y, x+rad*0.5*math.sin(minAng),y+rad*0.5*math.cos(minAng))
+  love.graphics.line(x, y, x+rad*0.5*math.sin(hourAng),y+rad*0.5*math.cos(hourAng))
   love.graphics.circle("line",x,y,rad)
   love.graphics.setLineWidth(1)
   love.graphics.setColor(255,255,255)
@@ -151,24 +151,51 @@ checkNewsStories=function()
     end
   end
 end
+newsFeedSpeed=0.05
 NewsStory=Class{
   init=function(self,title,body,newsFeedAmount)
     self.title=title
     self.body=body
     self.date=time2
     self.newsFeedAmount=newsFeedAmount
+    self.heightMult=0
   end;
   getDateText=function(self)
     return string.format(self.date/100).."s"
   end;
   print=function(self,fW,fH,x,y,w)
-    love.graphics.rectangle("fill", x+10, y+10, reviewPicWidth, reviewPicHeight)
-    h=drawTextInBox(self.title,fW,fH,x+reviewPicWidth+20,y+10,w-reviewPicWidth-20)
-    love.graphics.line(x+reviewPicWidth+20,y+30, w-10,y+30)
-    h=drawTextInBox(self.body,fW,fH,x+reviewPicWidth+20,y+30,w-reviewPicWidth-20)
-    love.graphics.print(getDateText(self.date),x+10,y+reviewPicHeight+40)
+
+    if(self.heightMult<1)then self.heightMult=self.heightMult+newsFeedSpeed end
+    h=drawTextInBox(self.title,fW,fH,x+reviewPicWidth+20,y+10,w-reviewPicWidth-20,nil,true)
+    h=drawTextInBox(self.body,fW,fH,x+reviewPicWidth+20,y+30,w-reviewPicWidth-20,nil,true)
     if(h<reviewPicWidth+fH+50)then h=reviewPicWidth+fH+50 end
+
+    --actually draw
+    h=h*self.heightMult
+
+    local stencil = function()
+      love.graphics.rectangle("fill", x-2,y-2,w+4,h+4)
+    end
+
+    love.graphics.stencil(stencil,"replace",1)
+    love.graphics.setStencilTest("greater", 0)
+
+    love.graphics.setColor(0,0,0,255)
+    love.graphics.rectangle("fill", x, y, w, h+fH*2)
+    love.graphics.setColor(255,255,255,255)
+
+
+    love.graphics.rectangle("fill", x+10, y+10, reviewPicWidth, reviewPicHeight)
+    drawTextInBox(self.title,fW,fH,x+reviewPicWidth+20,y+10,w-reviewPicWidth-20,h)
+    love.graphics.line(x+reviewPicWidth+20,y+30, w-10,y+30)
+    love.graphics.print(getDateText(self.date),x+10,y+reviewPicHeight+40)
+    drawTextInBox(self.body,fW,fH,x+reviewPicWidth+20,y+30,w-reviewPicWidth-20,h)
+    love.graphics.print(getDateText(self.date),x+10,y+reviewPicHeight+40)
+
+
     love.graphics.rectangle("line", x, y, w, h+fH*2)
+
+    love.graphics.setStencilTest()
     return h+35
   end;
 }

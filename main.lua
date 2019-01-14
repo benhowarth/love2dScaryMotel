@@ -324,6 +324,14 @@ function love.draw()
 
 
 	love.graphics.setCanvas()
+	flashlightShader:send("w",window.w)
+	flashlightShader:send("h",window.w)
+	flashlightShader:send("x",mouseX)
+	flashlightShader:send("y",mouseY)
+	flashlightShader:send("rad",flashlightRad)
+	flashlightShader:send("bleed",0.4)
+	flashlightShader:send("strength",0.7)
+	love.graphics.setShader(flashlightShader)
 	love.graphics.setShader(pixelShader)
 	love.graphics.draw(canvas)
 	else
@@ -408,6 +416,7 @@ function love.keyreleased(key)
 	if(inGame)then
 		if(key=="q")then
 			inspectPlayer=false
+			--msg("title",floors[1]:getVacantRooms())
 		end
 	else
 		--menu
