@@ -31,6 +31,7 @@ M.imgs.hotdogcart=love.graphics.newImage("res/hotdogcart.png")
 M.imgs.hotdog=love.graphics.newImage("res/hotdog.png")
 M.imgs.statue=love.graphics.newImage("res/statue.png")
 M.imgs.statueGlow=love.graphics.newImage("res/statueGlow.png")
+M.imgs.mound=love.graphics.newImage("res/mound.png")
 
 
 M.roofBottomWidthExtra=20
@@ -440,7 +441,7 @@ newUpgradeSpecial("Vending Machine",nil,500,function() return hasAppeared("No Ve
  end)
 newUpgradeSpecial("Get More Stock For Vending Machine",nil,700,function() return isBought("Vending Machine") and time2>dayLen*3 end,nil,nil,function()
   vendingMachineTimerMax=800
-  newNewsStory("RE Vending Machine","Fixed a hole in the vending machine where the rats were getting in but they're stilling getting in. Might need a more permenant solution. -"..getHelpInitial())
+  newNewsStory("RE Vending Machine","Fixed a hole in the vending machine where the rats were getting in but they're still getting in. Might need a more permenant solution. -"..getHelpInitial())
 end)
 newUpgradeSpecial("Bash Rats In Vending Machine",nil,1000,function() return isBought("Get More Stock For Vending Machine") and time2>dayLen*5 end,nil,nil,function()
   vendingMachineTimerMax=1300
@@ -608,7 +609,7 @@ function(self)
   if(catsAttacked)then
     cats={}
     catAttack=false
-    evilPercAdd(0.001)
+    evilPercAdd(0.01)
     hotdogClosedTimer=10
     hotdogTop=math.ceil(math.random()*#mortalTop)
     hotdogBottom=math.ceil(math.random()*#mortalBottom)
@@ -692,28 +693,33 @@ newProblem("Slime",nil,false,function() return isBought("Air Conditioning") end,
 
 --a cop or two
 copNext=false
+copNext=true
 newProblem("Cops",nil,false,function() return missingMortalsNo>0 and time2>dayLen*8.5 end,100000,
 function(self,x,y,w)
 end,
 function(self)
   if(math.random()>0.7)then copNext=true end
-  msg("check cop, nextcop:",Inspect(copNext))
+  --msg("check cop, nextcop:",Inspect(copNext))
 end,
 {"I kept getting questioned by police"},2,nil,nil,{"There were no cops"},4)
 --mound/statue (deactivated for a while)
 
-statueTimer=300
+statueTimer=100
 --statueTimer=0
 statueHelpTimer=500
 --statueHelpTimer=30
 statueHelpCounter=0
-newProblem("Mound",nil,false,function() return time2>dayLen*10 end,100,nil,nil,{"I tripped over a mound in the parking lot"},2,nil,nil,{"The ground was smooth"},3)
+newProblem("Mound",nil,false,function() return time2>dayLen*10 end,100,nil,
+function(self,x,y,w)
+    love.graphics.setColor(255, 255, 255, 255)
+    love.graphics.draw(M.imgs.mound,x+30+floors[1].width,y+floors[1].height+4,0,w,w,M.imgs.mound:getWidth(),M.imgs.mound:getHeight())
+end,{"I tripped over a mound in the parking lot"},2,nil,nil,{"The ground was smooth"},3)
 newProblem("Statue",nil,false,function() return isBought("Unearth Mound") end,10,
 
 function(self)
 
   if(inBox(mouseX,mouseY,floorX+floors[1].width+100,floorY-100,100,100) and love.mouse.isDown(1) and statueTimer==0) then
-    evilPercAdd(0.001)
+    evilPercAdd(0.01)
     --statueTimer=20
     statueTimer=1
     cursorState="kill"
@@ -743,9 +749,9 @@ function(self,x,y,w)
     --love.graphics.rectangle("line", floorX+floors[1].width+100,floorY-100,100,100)
     love.graphics.setColor(255, 255, 255, 255)
     if(statueTimer>0)then
-      love.graphics.draw(M.imgs.statue,x+30+floors[1].width,y+floors[1].height,0,w,w,M.imgs.statue:getWidth(),M.imgs.statue:getHeight())
+      love.graphics.draw(M.imgs.statue,x+30+floors[1].width,y+floors[1].height+4,0,w,w,M.imgs.statue:getWidth(),M.imgs.statue:getHeight())
     else
-      love.graphics.draw(M.imgs.statueGlow,x+30+floors[1].width,y+floors[1].height,0,w,w,M.imgs.statueGlow:getWidth(),M.imgs.statueGlow:getHeight())
+      love.graphics.draw(M.imgs.statueGlow,x+30+floors[1].width,y+floors[1].height+4,0,w,w,M.imgs.statueGlow:getWidth(),M.imgs.statueGlow:getHeight())
     end
 end,{"There was a weird statue outside"},2,nil,nil,{"There was no weird statue outside"},1)
 newUpgradeSpecial("Unearth mound",nil,100,function() return hasAppeared("Mound") end,{"Mound"},{"Statue"})
@@ -1015,11 +1021,11 @@ newUpgradeSpecial("Faster Cleaning",nil,4000,function() return #newsFeed>30 end,
 end)
 
 newUpgradeSpecial("Bigger Waiting List",nil,8000,function() return #newsFeed>45 end,nil,nil,function()
-  customerLim=7
+  customerLim=9
 end)
 
 newUpgradeSpecial("Huge Waiting List",nil,10000,function() return (isBought("Bigger Waiting List") and #newsFeed>60) end,nil,nil,function()
-  customerLim=10
+  customerLim=13
 end)
 
 
@@ -1079,17 +1085,28 @@ Room=Class{
     end
     love.graphics.setColor(255,255,255)
     if(inBox(mouseX,mouseY,x+self.x,y+self.y,35,50))then
-      if(cursorState~="kill")then
+      if(cursorState=="kill")then
+        if(love.mouse.isDown(1) and self.currentMortal~=nil)then
+          mortals[self.currentMortal]:goMissing()
+          cursorState=nil
+        end
+
+      elseif(cursorState=="assignRoom")then
+        if(love.mouse.isDown(1) and mortalSelected~=nil and self.currentMortal==nil)then
+          self:assignMortal(mortalSelected)
+          mortals[mortalSelected].state="ENTERING"
+          mortals[mortalSelected].roomId=self.id
+          mortals[mortalSelected].floorId=self.floorId
+          cursorState=nil
+          mortalSelected=nil
+          customerSelected=nil
+        end
+      else
         --if(stayPercentage>0)then
           roomMenuId=self.id
         --end
         --if(love.mouse.isDown(1))then if(self.clicked==false) then self.open=self.open*-1 self.clicked=true end else self.clicked=false end
         if(love.mouse.isDown(1))then self.open=1 else self.open=-1 end
-      else
-        if(love.mouse.isDown(1) and self.currentMortal~=nil)then
-          mortals[self.currentMortal]:goMissing()
-          cursorState=nil
-        end
       end
     end
     if(self.currentMortal~=nil)then
@@ -1317,14 +1334,30 @@ addFloor=function(cost,roomNo)
   newProblem(string.format("Old F%d",#floors),floorNo,true,nil,100,nil,nil,{"It was drab"},2,nil,nil,{"It was renovated"},4)
   newUpgrade(string.format("Renovate F%d",#floors),floorNo,cost/3,nil,{string.format("Old F%d",#floors)},nil)
   if(#floors>=2)then
-    newProblem(string.format("No Stairs F%d",#floors),floorNo,true,nil,100,nil,nil,{"I couldn't get to my room"},1,nil,function(self,x,y,w) local xDir=1 local xBuffer=0 local curFloorY=y-((floors[floorNo].height-2)*(floorNo-2)) if(math.fmod(floorNo,2)~=0)then xDir=-1 xBuffer=-M.imgs.stairs:getWidth()*w end love.graphics.line(x-floors[1].width/2-6,curFloorY,x-floors[1].width/2-6-M.imgs.stairs:getWidth()*w,curFloorY) love.graphics.draw(M.imgs.stairs,x-floors[1].width/2-6+xBuffer,curFloorY-6,0,w*xDir,w,M.imgs.stairs:getWidth()) end,{"It had stairs"},3)
+    newProblem(string.format("No Stairs F%d",#floors),floorNo,true,nil,100,nil,nil,{"I couldn't get to my room"},1,nil,
+    function(self,x,y,w)
+      local xDir=1
+      local xBuffer=0
+      --issue here TODO
+      local curFloorY=y-((floors[floorNo].height-2)*(floorNo-2))
+
+
+      if(math.fmod(floorNo,2)~=0)then
+        xDir=-1
+        xBuffer=-M.imgs.stairs:getWidth()*w
+      end
+      love.graphics.line(x-floors[1].width/2-6,curFloorY,x-floors[1].width/2-6-M.imgs.stairs:getWidth()*w,curFloorY)
+      love.graphics.draw(M.imgs.stairs,x-floors[1].width/2-6+xBuffer,curFloorY-6,0,w*xDir,w,M.imgs.stairs:getWidth())
+    end,
+    {"It had stairs"},3)
     newUpgrade(string.format("Stairs to F%d",#floors),floorNo,cost/2,nil,{string.format("No Stairs F%d",#floors)},nil)
 
     newProblem(string.format("No Railing F%d",#floors),floorNo,true,nil,100,nil,nil,{"There was no railing"},1,nil,function(self,x,y,w) local curFloorY=y-((floors[floorNo].height-2)*(floorNo-2)) love.graphics.draw(M.imgs.railing,x,curFloorY,0,w,w,M.imgs.railing:getWidth()/2,M.imgs.railing:getHeight()/2) end,{"The railing was nice"},3)
     newUpgrade(string.format("Railing F%d",#floors),floorNo,cost/4,nil,{string.format("No Railing F%d",#floors)},nil)
   end
-
-  newUpgradeSpecial(string.format("Build Floor %d",#floors+1),nil,cost,nil,nil,nil,function() newFloor(roomNo) addFloor(cost*5,roomNo) end)
+  if(floorNo<5)then
+    newUpgradeSpecial(string.format("Build Floor %d",#floors+1),nil,cost,nil,nil,nil,function(self) newFloor(4) addFloor(self.cost*5,4) end)
+  end
 end
 addFloor(100,4)
 --love.window.showMessageBox("floor", Inspect(floors), "info", true)

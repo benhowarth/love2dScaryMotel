@@ -58,6 +58,7 @@ T.parse=function(str)
 						res=res.."#"..nextPick.."#"
 					end
 				elseif(cur=="@")then
+					--msg("res",res.."\n"..nextPick.."\n"..T.variables[nextPick])
 					if(T.variables[nextPick]~=nil)then
 						res=res..T.parse(T.variables[nextPick])
 					else

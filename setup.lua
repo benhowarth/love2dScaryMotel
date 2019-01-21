@@ -20,7 +20,10 @@ window.w,window.h=love.window.getMode()
 canvas = love.graphics.newCanvas(window.w, window.h)
 love.window.setFullscreen(true)
 
+
 love.window.setIcon(love.image.newImageData(("res/icon.png")))
+
+love.mouse.setVisible(false)
 
 love.graphics.setBackgroundColor(0,0,0)
 
@@ -128,5 +131,9 @@ time=0
 imgs={}
 
 for i,img in ipairs(imgs) do
+  img:setFilter('nearest', 'nearest')
+end;
+
+for i,img in ipairs(otherImgs) do
   img:setFilter('nearest', 'nearest')
 end;

@@ -1,6 +1,41 @@
 require 'mortalGrammars'
 mortals={}
 missingMortalsNo=0
+lastInvestigationProgress=0
+investigationProgress=0
+
+function getInvestigationNewsStory()
+  if(investigationProgress==1 and lastInvestigationProgress~=1)then
+    --end game
+    newNewsStory("GAME OVER","It looks like it's game over for the seedy happenings at the motel that's been under investigation.")
+  elseif(investigationProgress>0.7 and lastInvestigationProgress<=0.7)then
+    --newsStory
+    newNewsStory("Motel 'top priority'","Looks like the investigation into the new motel has gotten the attention of the chief of police.")
+  elseif(investigationProgress>0.5 and lastInvestigationProgress<=0.5)then
+    --newsStory
+    newNewsStory("Crime motel?","Police announce full investigation of new motel.")
+    newDraggable("police letter",0,0,80,100,"policeLetter","A letter regarding the ongoing investigation about the motel. This doesn't look good.")
+  elseif(investigationProgress>0.3 and lastInvestigationProgress<=0.3)then
+    --newsStory
+    newNewsStory("More motel cops","Police presence near the new motel has increased.")
+  elseif(investigationProgress>0.1 and lastInvestigationProgress<=0.1)then
+    --newsStory
+    newNewsStory("Police seen at motel","Cops have been 'snooping around' new motel.")
+  end
+end
+
+function addInvestigationProgress(n)
+  lastInvestigationProgress=investigationProgress
+  if(investigationProgress+n>1)then
+    investigationProgress=1
+    getInvestigationNewsStory()
+    gameOver()
+  else
+    investigationProgress=investigationProgress+n
+    getInvestigationNewsStory()
+  end
+end
+
 ReviewFragment=Class{
   init=function(self,text,rating,weight,problemToNotify)
     self.text=text
@@ -69,7 +104,8 @@ Review=Class{
     love.graphics.print(getDateText(self.date),x+10,y+reviewPicHeight+40)
 
     if(self.mortalId~=nil)then
-      love.graphics.print(string.format("-%s (%d.%d)",mortals[self.mortalId].name,mortals[self.mortalId].floorId,mortals[self.mortalId].roomId),x+reviewPicWidth+20,y+h-fH)
+      --love.graphics.print(string.format("-%s (Room %d)",mortals[self.mortalId].name,(mortals[self.mortalId].floorId*100)+mortals[self.mortalId].roomId),x+reviewPicWidth+20,y+h-fH)
+      love.graphics.print(string.format("%s (Room %d)",mortals[self.mortalId].name,(mortals[self.mortalId].floorId*100)+mortals[self.mortalId].roomId),x+5,y+h-fH)
     end
     if(self.redacted)then
       love.graphics.setColor(0,0,0,255)
@@ -116,11 +152,11 @@ Review=Class{
           cursorState=nil
           mortals[self.mortalId]:goMissing()
         end
-        love.graphics.setFont(fontDefault)
-        love.graphics.print("@",mX+2,mY)
+        --love.graphics.setFont(fontDefault)
+        --love.graphics.print("@",mX+2,mY)
 
         love.graphics.setFont(fontSpooky)
-        drawMenuBox({"  "..mortals[self.mortalId].username,mortals[self.mortalId].bio,unpack(mortals[self.mortalId]:getStats())},10,fW,fH,mX,mY,150)
+        drawMenuBox({mortals[self.mortalId].firstName.." "..mortals[self.mortalId].lastName,mortals[self.mortalId].bio,unpack(mortals[self.mortalId]:getStats())},10,fW,fH,mX,mY,150)
 
       else
         drawMenuBox({"Error","404 Not Found"},10,fW,fH,mX,mY,150)
@@ -150,6 +186,9 @@ mortalBottom[2]=love.graphics.newImage("res/mortalBottom2.png")
 mortalBottom[3]=love.graphics.newImage("res/mortalBottom3.png")
 mortalBottom[4]=love.graphics.newImage("res/mortalBottom4.png")
 mortalBottom[5]=love.graphics.newImage("res/mortalBottom5.png")
+
+mortalPayMultiplier=0.05
+
 Mortal=Class{
   init=function(self,id,mortalType)
     self.id=id
@@ -175,6 +214,7 @@ Mortal=Class{
     elseif(self.type=="murderer")then
       self.bio=T.parse("#creepyBio#")
       self.helloString=T.parse("#creepyHello#")
+      self.stats["pay"]=3
     else
       self.bio=T.parse("#bio#")
       self.helloString=T.parse("#hello#")
@@ -193,7 +233,9 @@ Mortal=Class{
     self.direction=1
     --self.stay=(math.random()*300)+100
     --self.stay=(math.random()*800)+200
-    self.stay=(math.random()*1600)+500
+    --self.stay=(math.random()*1600)+500
+    self.stay=(math.random()*dayLen*3)+dayLen
+    if(self.type=="murderer")then self.stay=self.stay*1.5 end
     self.stayTimer=0
     self.floorId=nil
     self.roomId=nil
@@ -230,7 +272,7 @@ Mortal=Class{
 
       if(self.type=="cop")then
         --investigate
-        
+
       elseif(self.type=="murderer")then
         --murder a person?
         if(everyMS(100) and math.random()>0.8)then
@@ -313,7 +355,9 @@ Mortal=Class{
     local drawMenuNameH=drawTextInBox(self.name,fW,fH,x,y,150)
     local drawMenuInfoH=drawTextInBox(self.bio,fW,fH,x,y+10+drawMenuNameH,150)
     local statsString=self:getStatsString()
-    local drawMenuStats=drawTextInBox(statsString,fW,fH,x,y+10+drawMenuNameH+10+drawMenuInfoH,150)+40
+    local stayString=string.format("%.2f hrs ($%.2f)",24*(self.stay/dayLen),self.stay*mortalPayMultiplier*self.stats["pay"])
+    if((self.stay/dayLen)>=1)then stayString=string.format("%.2f days ($%.2f)",(self.stay/dayLen),self.stay*mortalPayMultiplier*self.stats["pay"]) end
+    local drawMenuStats=drawTextInBox(statsString..stayString,fW,fH,x,y+10+drawMenuNameH+10+drawMenuInfoH,150)+40+20
     local drawMenuH=drawMenuNameH+10+drawMenuStats+10+drawMenuInfoH+20
     love.graphics.setColor(0,0,0,255)
     love.graphics.rectangle("fill", mouseX,mouseY,150,drawMenuH)
@@ -321,7 +365,7 @@ Mortal=Class{
     love.graphics.rectangle("line", mouseX,mouseY,150,drawMenuH)
     drawTextInBox(self.name,fW,fH,x,y,150)
     drawTextInBox(self.bio,fW,fH,x,y+10+drawMenuNameH,150)
-    drawTextInBox(statsString,fW,fH,x,y+10+drawMenuNameH+10+drawMenuInfoH,150)
+    drawTextInBox(statsString..stayString,fW,fH,x,y+10+drawMenuNameH+10+drawMenuInfoH,150)
   end;
   printCustomer=function(self,fW,fH,x,y,w)
     local h=drawTextInBox(self.name,fW,fH,x,y,w)
@@ -344,27 +388,40 @@ Mortal=Class{
         posNum=posNum-1
       end
     end
-    --love.window.showMessageBox("neg vs pos number", "fragNumber: "..fragNumber.."\nneg: "..negNum.."\npos: "..posNum.."\nneg frags:"..#self.reviewFragsNeg.."\npos frags:"..#self.reviewFragsPos, "info", true)
 
+
+    --love.window.showMessageBox("neg vs pos number", "fragNumber: "..fragNumber.."\nneg: "..negNum.."\npos: "..posNum.."\nneg frags:"..#self.reviewFragsNeg.."\npos frags:"..#self.reviewFragsPos, "info", true)
+    local ratingsString="\n\n\n"
     if(self.possessed)then
       self.reviewString="#possessedGood#"
       self.rating=5
     elseif(#self.reviewFragsNeg~=0 or #self.reviewFragsPos~=0)then
       self.rating=0
       for i=1,negNum do
+        --msg("negNum"..i,self.reviewFragsNeg[i].text)
         if(self.reviewFragsNeg[i].problemToNotify~=nil) then
           --msg(problems[self.reviewFragsNeg[i].problemToNotify].name.." appeared",Inspect(problems[self.reviewFragsNeg[i].problemToNotify]))
           problems[self.reviewFragsNeg[i].problemToNotify].appeared=true
         end
         T.setVar("negfrag"..Inspect(i),self.reviewFragsNeg[i].text)
-        self.rating=((self.rating*(i-1))+self.reviewFragsNeg[i].rating)/i
+        self.rating=self.rating+self.reviewFragsNeg[i].rating
+        ratingsString=ratingsString..self.reviewFragsNeg[i].rating.."\n"
       end
       for i=1,posNum do
+        --msg("posNum"..i,self.reviewFragsPos[i].text)
         T.setVar("posfrag"..Inspect(i),self.reviewFragsPos[i].text)
-        self.rating=((self.rating*(i-1))+self.reviewFragsPos[i].rating)/i
+        self.rating=self.rating+self.reviewFragsPos[i].rating
+        ratingsString=ratingsString..self.reviewFragsPos[i].rating.."\n"
       end
+      self.rating=self.rating/(negNum+posNum)
+      --msg("final rating",self.rating..ratingsString)
+      --msg("vars",Inspect(T.variables))
       --love.window.showMessageBox(Inspect(fragNumber), Inspect(T.variables), "info", true)
       self.reviewString=T.parse("#review"..Inspect(negNum).."n"..Inspect(posNum).."p#")
+      --msg("#review"..Inspect(negNum).."n"..Inspect(posNum).."p#",self.reviewString)
+      --msg("#review"..Inspect(negNum).."n"..Inspect(posNum).."p#",Inspect(self.reviewFragsNeg))
+
+      --msg("#review"..Inspect(negNum).."n"..Inspect(posNum).."p#",Inspect(self.reviewFragsPos))
       self.rating=math.floor(self.rating)
 
 
@@ -417,12 +474,35 @@ Mortal=Class{
     end
 
 
-    money=money+self.stay*0.05*self.stats["pay"]
+    money=money+self.stay*mortalPayMultiplier*self.stats["pay"]
     --if not very clean person
     if(self.stats["clean"]<3)then
       floors[self.floorId]:makeDirtier(0.3*(3-self.stats["clean"])/3)
     end
   	addToNewsFeed(self:getFinalReview(3))
+    if(self.type=="cop" and not(self.possessed))then
+
+      local bribeName=string.format("Bribe %s",self.lastName)
+      newProblem(bribeName,nil,true,availableFunc,1,function(self)
+        if(self.timer<=0)then
+          upgrades[self.upgradeId]:makeUnavailable()
+          self.active=false
+          addInvestigationProgress(0.1)
+        else
+          self.timer=self.timer-1
+        end
+        local timeString=string.format("(%.2f hrs left)",getHours(self.timer))
+        if(self.timer>dayLen)then
+          timeString=string.format("(%i days left)",self.timer/dayLen)
+        end
+        upgrades[self.upgradeId].name=string.format("%s %s",self.name,timeString)
+      end,nil,nil,nil,nil,nil,nil,nil)
+      --set timer
+      problems[#problems].timer=dayLen*4
+      newUpgrade(bribeName,nil,150+math.floor(investigationProgress*2000),nil,{bribeName},nil)
+      --set upgradeID
+      problems[#problems].upgradeId=#upgrades
+    end
   end;
   goMissing=function(self,isBloody)
 
@@ -443,7 +523,7 @@ Mortal=Class{
     self.state="MISSING"
     missingMortalsNo=missingMortalsNo+1
 
-    evilPercAdd(0.002)
+    evilPercAdd(0.02)
     self.x=window.w+100
 
     floors[self.floorId].rooms[self.roomId]:deassignMortal()

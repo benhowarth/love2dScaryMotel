@@ -77,12 +77,15 @@ function drawCustomers(x,y,yOffset,w,h,fW,fH)
       --love.window.showMessageBox("yo", Inspect(customersToAdmit[n]), "info", true)
       customerMenuId=n
     end
+    if(n==customerSelected)then love.graphics.setColor(255,0,0,255) else love.graphics.setColor(255,255,255,255) end
     customersHeight=customersHeight+customersToAdmit[n]:printCustomer(fW,fH,x,y+customersHeight+yOffset,w)+10
   end
   love.graphics.setStencilTest()
   if(customerMenuId~=nil)then customersToAdmit[customerMenuId]:drawInfo(mouseX,mouseY,fW,fH) end
 end
 
+customerSelected=nil
+mortalSelected=nil
 function checkCustomersCol(x,y,yOffset,w,h,fW,fH,x1,y1)
   customersHeight=0
   customersToAdmit=getCustomers()
@@ -91,7 +94,16 @@ function checkCustomersCol(x,y,yOffset,w,h,fW,fH,x1,y1)
       local h=customersToAdmit[n]:printCustomer(fW,fH,x,y+customersHeight+yOffset,w)
       if(inBox(x1,y1,x+10,y+customersHeight+yOffset,w,h))then
         --love.window.showMessageBox("yo", Inspect(customersToAdmit[n]), "info", true)
-        activateCustomer(customersToAdmit[n].id)
+        if(cursorState~="assignRoom" or n~=customerSelected)then
+          cursorState="assignRoom"
+          mortalSelected=customersToAdmit[n].id
+          customerSelected=n
+        else
+          cursorState=nil
+          mortalSelected=nil
+          customerSelected=nil
+        end
+        --activateCustomer(customersToAdmit[n].id)
       end
       customersHeight=customersHeight+h+10
     end
@@ -105,11 +117,15 @@ function getAvgRating()
       rating=((rating*(n-1))+newsFeed[n].rating)/n
     end
   end
+  if((not gameEnd) and rating<1)then
+    newNewsStory("Motel fails","Motel ratings plummet as it's forced to shut down.")
+    gameOver()
+  end
   return rating
 end
 
 
-getRatingText=function(rating)
+function getRatingText(rating)
 
   rateText=""
   if(rating~=nil)then
@@ -128,7 +144,7 @@ function drawClock(x,y,rad,hour,min,printAMPM)
     love.graphics.setColor(255, 255, 255)
     local AMPM="AM"
     if(math.fmod(hour,24)>=12)then AMPM="PM" end
-    love.graphics.print(AMPM,x-14,y+rad/2)
+    love.graphics.print(AMPM,x-14,y+rad*0.3)
   end
   love.graphics.setLineWidth(5)
   local hourAng=-((hour/12)*2*math.pi)-math.pi
@@ -206,8 +222,3 @@ newNewsStory=function(title,body,newsFeedAmount)
     addToNewsFeed(NewsStory(title,body,nil))
   end
 end
-
-newNewsStory("New Motel Opens!","A new Motel has opened just off highway 5, the long-abandoned property was purchased by a plucky entrepreneur. Updates as business continues.")
-
-newNewsStory("RE Motel Purchase","Hi, I'm the help around here. Give me a shout if you need anything, especially if you want to try to improve this place. -"..getHelpInitial())
-addToNewsFeed(Review("This is a review for the motel, customers will give you feedback and a rating, try to keep your rating up. Let's get you started with a nice 5 stars. -"..getHelpInitial(),5,nil))

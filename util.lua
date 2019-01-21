@@ -214,3 +214,8 @@ end
 function msg(title,body)
 	love.window.showMessageBox(title,body,"info",true)
 end
+
+gameEnd=false
+function gameOver()
+	msg("GAME OVER","Ye")
+end
