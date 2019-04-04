@@ -29,7 +29,9 @@ function addInvestigationProgress(n)
   if(investigationProgress+n>1)then
     investigationProgress=1
     getInvestigationNewsStory()
-    gameOver()
+    if(not gameEnd)then
+      gameOver()
+    end
   else
     investigationProgress=investigationProgress+n
     getInvestigationNewsStory()
@@ -54,6 +56,7 @@ Review=Class{
     self.date=time2
     self.redacted=false
     self.heightMult=0
+    self.read=false
   end;
   print=function(self,fW,fH,x,y,w)
 
@@ -90,6 +93,7 @@ Review=Class{
       love.graphics.setFont(fontSpooky)
     end
 
+
     love.graphics.rectangle("line", x+10, y+10, reviewPicWidth, reviewPicHeight)
 
     drawTextInBox(self.text,fW,fH,x+reviewPicWidth+20,y+10,w-reviewPicWidth-20,h-5)
@@ -125,6 +129,13 @@ Review=Class{
         love.graphics.setColor(255,255,255,255)
     end
 
+
+    if(self.read)then
+      love.graphics.setColor(255,255,255,255)
+    else
+      love.graphics.setColor(255,0,0,255)
+    end
+
     love.graphics.rectangle("line", x, y, w, h)
 
     --draw bio/check for kill
@@ -139,7 +150,8 @@ Review=Class{
         --draw non redacted bio
       --else
         --draw redacted bio
-    if(inBox(mX,mY,x+10,y+10,reviewPicWidth, reviewPicHeight) and self.heightMult>=1)then
+    if(inBox(mX,mY,x,y,w,h) and self.heightMult>=1)then
+      if(not self.read)then self.read=true end
 
 
 
@@ -150,7 +162,7 @@ Review=Class{
           self.redacted=true
           self.rating=nil
           cursorState=nil
-          mortals[self.mortalId]:goMissing()
+          mortals[self.mortalId]:goMissing(nil)
         end
         --love.graphics.setFont(fontDefault)
         --love.graphics.print("@",mX+2,mY)
@@ -187,7 +199,7 @@ mortalBottom[3]=love.graphics.newImage("res/mortalBottom3.png")
 mortalBottom[4]=love.graphics.newImage("res/mortalBottom4.png")
 mortalBottom[5]=love.graphics.newImage("res/mortalBottom5.png")
 
-mortalPayMultiplier=0.05
+mortalPayMultiplier=0.005
 
 Mortal=Class{
   init=function(self,id,mortalType)
@@ -234,7 +246,7 @@ Mortal=Class{
     --self.stay=(math.random()*300)+100
     --self.stay=(math.random()*800)+200
     --self.stay=(math.random()*1600)+500
-    self.stay=(math.random()*dayLen*3)+dayLen
+    self.stay=(math.random()*dayLen*1.5)+dayLen
     if(self.type=="murderer")then self.stay=self.stay*1.5 end
     self.stayTimer=0
     self.floorId=nil
@@ -277,6 +289,15 @@ Mortal=Class{
         --murder a person?
         if(everyMS(100) and math.random()>0.8)then
           floors[self.floorId]:pickRoomGoMissing(self.roomId)
+        end
+      end
+
+      local temp=getTemperature()
+      if(math.random()>0.9)then
+        if(temp>80)then
+          self:goMissing("boil")
+        elseif(temp<-80)then
+          self:goMissing("freeze")
         end
       end
 
@@ -351,21 +372,40 @@ Mortal=Class{
     end
     return stats
   end;
-  drawInfo=function(self,x,y,fW,fH)
-    local drawMenuNameH=drawTextInBox(self.name,fW,fH,x,y,150)
-    local drawMenuInfoH=drawTextInBox(self.bio,fW,fH,x,y+10+drawMenuNameH,150)
-    local statsString=self:getStatsString()
+  getStatsBars=function(self)
+    local stats={}
+    for k,v in pairs(self.stats) do
+      stats[#stats+1]={v,3,k}
+    end
+    return stats
+  end;
+  getCurrentStayString=function(self)
+    local stayString=string.format("%.1f hr",24*((self.stay-self.stayTimer)/dayLen))
+    if(((self.stay-self.stayTimer)/dayLen)>=1)then stayString=string.format("%.1f dy",((self.stay-self.stayTimer)/dayLen)) end
+    return stayString
+  end;
+  getStayString=function(self)
     local stayString=string.format("%.2f hrs ($%.2f)",24*(self.stay/dayLen),self.stay*mortalPayMultiplier*self.stats["pay"])
     if((self.stay/dayLen)>=1)then stayString=string.format("%.2f days ($%.2f)",(self.stay/dayLen),self.stay*mortalPayMultiplier*self.stats["pay"]) end
-    local drawMenuStats=drawTextInBox(statsString..stayString,fW,fH,x,y+10+drawMenuNameH+10+drawMenuInfoH,150)+40+20
-    local drawMenuH=drawMenuNameH+10+drawMenuStats+10+drawMenuInfoH+20
+    return stayString
+  end;
+  drawInfo=function(self,x,y,fW,fH)
+    --local drawMenuNameH=drawTextInBox(self.name,fW,fH,x,y,150)
+    --local drawMenuInfoH=drawTextInBox(self.bio,fW,fH,x,y+10+drawMenuNameH,150)
+    --local statsString=self:getStatsString()
+    local stayString=self:getStayString()
+    --local drawMenuStats=drawTextInBox(statsString..stayString,fW,fH,x,y+10+drawMenuNameH+10+drawMenuInfoH,150)+40+20
+    --local drawMenuH=drawMenuNameH+10+drawMenuStats+10+drawMenuInfoH+20
+    local bars=self:getStatsBars()
+    drawMenuH=drawTextInBoxTable({self.name,self.bio,bars[1],bars[2],bars[3],stayString},10,fW,fH,mouseX,mouseY,150)
     love.graphics.setColor(0,0,0,255)
     love.graphics.rectangle("fill", mouseX,mouseY,150,drawMenuH)
     love.graphics.setColor(255,255,255,255)
     love.graphics.rectangle("line", mouseX,mouseY,150,drawMenuH)
-    drawTextInBox(self.name,fW,fH,x,y,150)
-    drawTextInBox(self.bio,fW,fH,x,y+10+drawMenuNameH,150)
-    drawTextInBox(statsString..stayString,fW,fH,x,y+10+drawMenuNameH+10+drawMenuInfoH,150)
+    --drawTextInBox(self.name,fW,fH,x,y,150)
+    --drawTextInBox(self.bio,fW,fH,x,y+10+drawMenuNameH,150)
+    --drawTextInBox(statsString..stayString,fW,fH,x,y+10+drawMenuNameH+10+drawMenuInfoH,150)
+    drawTextInBoxTable({self.name,self.bio,bars[1],bars[2],bars[3],stayString},10,fW,fH,mouseX,mouseY,150)
   end;
   printCustomer=function(self,fW,fH,x,y,w)
     local h=drawTextInBox(self.name,fW,fH,x,y,w)
@@ -504,26 +544,36 @@ Mortal=Class{
       problems[#problems].upgradeId=#upgrades
     end
   end;
-  goMissing=function(self,isBloody)
+  goMissing=function(self,why)
+    --why=murder,shadow,statue,boil,freeze
 
     --if not left
     if(self.state=="STAYING")then
       money=money+self.stay*0.45
 
-      if(isBloody==true)then
+      if(why=="murder")then
         floors[self.floorId]:makeBloody()
-
-      	addToNewsFeed(Review(T.parse("I was murdered"),5,self.id))
-      else
-
+      	addToNewsFeed(Review(T.parse("I enjoyed my stay, even if was cut short unexpectedly."),5,self.id))
+        evilPercAdd(0.05)
+      elseif(why=="shadow")then
+        floors[self.floorId]:makeBloody()
+        addToNewsFeed(Review(T.parse("THE BEAST CONSUMES"),5,self.id))
+        evilPercAdd(0.08)
+      elseif(why=="statue")then
+        floors[self.floorId]:makeBloody()
       	addToNewsFeed(Review(T.parse("THE BEAST CONSUMES"),5,self.id))
+        evilPercAdd(0.1)
+      elseif(why=="boil")then
+      	addToNewsFeed(Review(T.parse("It was too hot for me, but overall pretty good."),5,self.id))
+        evilPercAdd(0.07)
+      elseif(why=="freeze")then
+      	addToNewsFeed(Review(T.parse("It was too chilly for me, but great overall."),5,self.id))
+        evilPercAdd(0.07)
       end
     end
 
     self.state="MISSING"
     missingMortalsNo=missingMortalsNo+1
-
-    evilPercAdd(0.02)
     self.x=window.w+100
 
     floors[self.floorId].rooms[self.roomId]:deassignMortal()
@@ -532,7 +582,7 @@ Mortal=Class{
 
 
 --mortalTypes={{"normal",0.9},{"murderer",0.06},{"cop",0.04}}
-mortalTypes={{"normal",0.98},{"murderer",0.015},{"cop",0.005}}
+mortalTypes={{"normal",1.0},{"murderer",0.00},{"cop",0.00}}
 decideMortalType=function()
   local mortalProbR=love.math.random()
   local sum=0

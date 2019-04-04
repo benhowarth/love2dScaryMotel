@@ -42,20 +42,22 @@ function newDraggable(name,x,y,w,h,img,tooltipText)
 end
 
 corkBoard={
-  x=100,
-  y=100,
-  w=600,
-  h=400,
+  x=window.w*0.05,
+  y=window.h*0.05,
+  w=window.w*0.3,
+  h=window.h*0.4,
+  --w=600,
+  --h=400,
   buffer=20
 }
 cursorPickedUp=nil
 
 calendar={
-  w=200,
-  h=200
+  w=window.w*0.15,
+  h=window.h*0.3
 }
-calendar.x=800
-calendar.y=100
+calendar.x=corkBoard.x+corkBoard.w+window.w*0.05
+calendar.y=corkBoard.y+window.h*0.1
 weekNo=4
 calendar.cells={}
 for we=1,weekNo do
@@ -125,10 +127,17 @@ calendar.draw=function()
 end;
 
 officeWindow={
-  x=window.w-800,
-  y=100,
-  w=425,
-  h=600,
+  x=window.w*0.6,
+  y=window.h*0.1,
+  w=window.w*0.2,
+  h=window.h*0.7,
+}
+
+lightSwitch={
+  x=window.w-60,
+  y=(window.h/2)-30,
+  w=40,
+  h=60
 }
 
 bulb={
@@ -226,21 +235,32 @@ menu.draw=function()
 
   love.graphics.setColor(252, 226, 166)
   --love.graphics.rectangle("line",bulb.x-30,bulb.y-30,60,60)
-  love.graphics.rectangle("fill",window.w-250,400,40,60)
+  love.graphics.rectangle("fill",lightSwitch.x,lightSwitch.y,lightSwitch.w,lightSwitch.h)
 
   if(bulb.on)then
   love.graphics.setColor(50, 35, 20)
-  love.graphics.rectangle("fill",window.w-250+15,400+15,10,15)
+  love.graphics.rectangle("fill",lightSwitch.x+15,lightSwitch.y+15,10,15)
 
   love.graphics.setColor(200, 180, 100)
-  love.graphics.rectangle("fill",window.w-250+15,400+30,10,15)
+  love.graphics.rectangle("fill",lightSwitch.x+15,lightSwitch.y+30,10,15)
 
   else
+    --decals
+    if(evilPerc>0.8)then
+      love.graphics.draw(imgs.menuPraiseDecal1,window.w*0.4,window.h*0.15,0.25,4,4)
+      love.graphics.draw(imgs.menuPraiseDecal2,window.w*0.85,window.h*0.5,-0.6,5,5)
+      love.graphics.draw(imgs.menuPraiseDecal3,window.w*0.1,window.h*0.48,0.5,8,8)
+
+      --Symbols
+      love.graphics.draw(imgs.menuPraiseDecal4,window.w*0.5,window.h*0.3,0.2,8,8)
+      love.graphics.draw(imgs.menuPraiseDecal5,window.w*0.9,window.h*0.35,-2,15,15)
+      love.graphics.draw(imgs.menuPraiseDecal6,window.w*0.4,window.h*0.48,0.8,20,20)
+    end
   love.graphics.setColor(200, 180, 100)
-  love.graphics.rectangle("fill",window.w-250+15,400+15,10,15)
+  love.graphics.rectangle("fill",lightSwitch.x+15,lightSwitch.y+15,10,15)
 
   love.graphics.setColor(50, 35, 20)
-  love.graphics.rectangle("fill",window.w-250+15,400+30,10,15)
+  love.graphics.rectangle("fill",lightSwitch.x+15,lightSwitch.y+30,10,15)
   end
 
 
@@ -250,7 +270,7 @@ end;
 
 menu.onClick=function()
   if(inBox(mouseX,mouseY,officeWindow.x,officeWindow.y,officeWindow.w,officeWindow.h)) then inGame=true paused=false pauseIcon="❚❚" end
-  if(inBox(mouseX,mouseY,window.w-250,400,40,60)) then if(bulb.on)then bulb.on=false else bulb.on=true end end
+  if(inBox(mouseX,mouseY,lightSwitch.x,lightSwitch.y,lightSwitch.w,lightSwitch.h)) then if(bulb.on)then bulb.on=false else bulb.on=true end end
   for d=1,#draggables do
     dr=draggables[d]
     if(inBox(mouseX,mouseY,dr.x,dr.y,dr.w,dr.h))then

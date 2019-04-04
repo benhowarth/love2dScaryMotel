@@ -168,6 +168,12 @@ function drawTextInBoxTable(textTable,gap,fW,fH,x,y,w)
 			love.graphics.rectangle("fill", x+gap, y+h, (perc*(w-(2*gap))), fH)
 			love.graphics.rectangle("line", x+gap, y+h, w-(2*gap), fH)
 
+			--add text
+			if(textTable[t][3]~=nil)then
+					love.graphics.setColor(255,0,0)
+					love.graphics.print(textTable[t][3],x+gap+((w-(2*gap))/4),y+h)
+			end
+
 			love.graphics.setColor(255,255,255)
 			h=h+fH+gap
 		else
@@ -217,5 +223,16 @@ end
 
 gameEnd=false
 function gameOver()
-	msg("GAME OVER","Ye")
+	gameEnd=true
+	  newNewsStory("Re The End","Guess it's over boss, close the window and start again. Someday you'll get it. -"..getHelpInitial())
+	--msg("GAME OVER","Ye")
+end
+
+function winGame()
+	gameEnd=true
+	if(missingMortalsNo>0)then
+		newNewsStory("Re The End","You actually did it. But you're not going anywhere. Not after what you did. -"..getHelpInitial())
+	else
+		newNewsStory("Re The End","Guess you're a goddamn saint then. But the boss isn't letting you go. You can start again if you want, who cares? -"..getHelpInitial())
+	end
 end

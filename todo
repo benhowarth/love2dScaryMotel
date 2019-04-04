@@ -69,33 +69,18 @@ MORE STUFF TO JUST UPGRADE AWAY (SYMBOLS ON WALLS ETC)
 REVIEW COMPLIMENTS AND COMPLAINTS
 
 
+BUGS
 save/load
-let player pick room to send to x
-fix time on bribe cops
+
+  tweak cop and murderer probabilities (change as time goes on?)
+  fix next cop
+  fix stairs upgrade not showing up on reload
+
+CONTENT
+save/load buttons?
+
+
 change death description
 change cop and murderer bios
 add dreams
-fix review display
-add room numbers x
-fix cost floors issue when Loading x?
-fix something about stairs post fix draw after load
-add praise them in office
-add shadow in office
-make ui scrolling smoother x
-fix ratings
-fix scrolling too far ui x
 take out railing/make less obstructive?
-
-show pay and stay time
-tweak cop and murderer probabilities (change as time goes on?)
-fix person off screen
-
-cat tutorial?
-fix hotdog cart placement
-
-add #good#
-add #possessedgood#
-add temperature evaluation
-
-cleaning cursor
-change stats to bars

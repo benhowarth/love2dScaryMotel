@@ -35,6 +35,23 @@ T.addGrammarTableFromFile=function(key,filename)
 	end
 	T.addGrammarTable(key,arr)
 end
+
+T.addGrammarTableFromString=function(key,string)
+	--https://stackoverflow.com/questions/12855988/file-to-array-in-lua
+	local arr={}
+	local lineString=""
+	for i=1,#string do
+		local char=string:sub(i,i)
+		if(char=="\n")then
+	  	table.insert (arr, lineString);
+			lineString=""
+		else
+			lineString=lineString..char
+		end
+	end
+	T.addGrammarTable(key,arr)
+end
+
 T.parse=function(str)
 	indexTemp=-1
 	nextPick=""

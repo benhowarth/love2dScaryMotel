@@ -4,6 +4,11 @@ otherImgs.cursors.default=love.graphics.newImage("res/cursor_default.png")
 otherImgs.cursors.kill=love.graphics.newImage("res/cursor_kill.png")
 otherImgs.cursors.assignRoom=love.graphics.newImage("res/cursor_assignRoom.png")
 
+otherImgs.icons={}
+otherImgs.icons.newsIcon=love.graphics.newImage("res/newsIcon.png")
+otherImgs.icons.unopenedEmailIcon=love.graphics.newImage("res/unopenedEmailIcon.png")
+otherImgs.icons.openedEmailIcon=love.graphics.newImage("res/openedEmailIcon.png")
+
 
 --STARTUP
 function love.load()
@@ -35,12 +40,12 @@ function love.load()
 
 	mortalTimeMin=300
 	mortalTimeMax=600
-	mortalTimeMin=1
-	mortalTimeMax=6
+	--mortalTimeMin=1
+	--mortalTimeMax=6
 	--mortalTime=love.math.random(mortalTimeMin,mortalTimeMax)
 	--mortalTime=love.math.random(200,400)
-	mortalTime=love.math.random(60,110)
-	mortalTime=10
+	mortalTime=love.math.random(mortalTimeMin,mortalTimeMax)
+	--mortalTime=10
 	paused=false
 	pauseIcon="❚❚"
 	inspectPlayer=true
@@ -108,20 +113,25 @@ end
 tutorialMessagesShown={false,false,false,false}
 function love.update(dt)
 	if(gameBooted)then
+
+
 		if(inGame)then
+			if((not paused) and everyMS(1000))then
+				--saveData()
+			end
 			--first messages
 			if(not(tutorialMessagesShown[1]) and  time2>3)then
 				tutorialMessagesShown[1]=true
 				newNewsStory("New Motel Opens!","A new Motel has opened just off highway 5, the long-abandoned property was purchased by a plucky entrepreneur. Updates as business continues.")
-			elseif(not(tutorialMessagesShown[2]) and  time2>30)then
+			elseif(not(tutorialMessagesShown[2]) and  time2>100)then
 					tutorialMessagesShown[2]=true
-					newNewsStory("RE Motel Purchase","Hi, I'm the help around here. Give me a shout if you need anything, especially if you want to try to improve this place. Left click on a customer's name and then a room to book them in. -"..getHelpInitial())
-			elseif(not(tutorialMessagesShown[3]) and  time2>90)then
+					newEmail("RE Motel Purchase","Hi, I'm the help around here. Give me a shout if you need anything, especially if you want to try to improve this place. Left click on a customer's name and then a room to book them in, or right click to automatically assign a room to them. -"..getHelpInitial())
+			elseif(not(tutorialMessagesShown[3]) and  time2>1000)then
 				tutorialMessagesShown[3]=true
 				addToNewsFeed(Review("This is a review for the motel, customers will give you feedback and a rating, try to keep your rating up. Let's get you started with a nice 5 stars. -"..getHelpInitial(),5,nil))
-			elseif(not(tutorialMessagesShown[4]) and  time2>200)then
+			elseif(not(tutorialMessagesShown[4]) and  time2>2500)then
 					tutorialMessagesShown[4]=true
-					newNewsStory("RE Upgrades","If you want to get started with fixing this place up, I'd buy some upgrades with the cash you make. -"..getHelpInitial())
+					newEmail("RE Upgrades","If you want to get started with fixing this place up, I'd buy some upgrades with the cash you make. -"..getHelpInitial())
 			end
 
 
@@ -140,7 +150,8 @@ function love.update(dt)
 				time=time+dt
 				--if(debug==true)then time2=time2+1
 				--else time2=time2+0.1 end
-				time2=time2+1
+				--time2=time2+1
+				time2=time2+dt*30
 				u=getUpgrades()
 				for k=1,#u do
 					u[k]:update()
@@ -160,25 +171,25 @@ function love.update(dt)
 					--mortalInterval=mortalInterval*0.9
 					--if(mortalInterval<mortalIntervalMin)then mortalInterval=mortalIntervalMin end
 
-					if(debug==true)then
-						mortalTimeMin=300
-						mortalTimeMax=600
-					end
 					mortalTime=time2+love.math.random(mortalTimeMin,mortalTimeMax)
 				end
 				updateProblems()
+				if(time2>dayLen*7*4 and (not gameEnd))then
+					winGame()
+				end
 			end
 		else
 			menu.update()
 		end
 	else
+		loadData()
 		bootTimer=bootTimer+1
-		if(bootTimer>1000)then gameBooted=true
-		elseif(bootTimer>800)then  bootText=bootText.."\nERROR ANOMALY DETECTED" bootTextLines=bootTextLines+1
-		elseif(bootTimer==700)then bootText=bootText.."\nExorcising issues..." bootTextLines=bootTextLines+1
-		elseif(bootTimer==500)then bootText=bootText.."\nSearching for issues..." bootTextLines=bootTextLines+1
-		elseif(bootTimer==300)then bootText=bootText.."\nLoading from disk..." bootTextLines=bootTextLines+1
-		elseif(bootTimer==100)then bootText=bootText.."\nAllocating Memory..." bootTextLines=bootTextLines+1
+		if(bootTimer>400)then gameBooted=true
+		elseif(bootTimer>340)then  bootText=bootText.."\nERROR ANOMALY DETECTED || DO NOT COMPLETE BOOT PROCEDURE ||" bootTextLines=bootTextLines+1
+		elseif(bootTimer==230)then bootText=bootText.."\nExorcising issues..." bootTextLines=bootTextLines+1
+		elseif(bootTimer==150)then bootText=bootText.."\nFinding issues..." bootTextLines=bootTextLines+1
+		elseif(bootTimer==100)then bootText=bootText.."\nLoading from disk..." bootTextLines=bootTextLines+1
+		elseif(bootTimer==50)then bootText=bootText.."\nAllocating Memory..." bootTextLines=bootTextLines+1
 	 end
 	end
 	if(loadDataOnFrameEnd)then loadData() loadDataOnFrameEnd=false end
@@ -294,12 +305,12 @@ function love.draw()
 		 if(getNightTime())then
 
 			 love.graphics.setColor(255, 255, 255, 150)
-			 love.graphics.circle("fill", mouseX,mouseY,30)
+			 love.graphics.circle("fill", mouseX,mouseY,flashlightRad)
 			 love.graphics.setColor(255, 255, 255, 255)
 
 
 			  local stencil = function()
-			    love.graphics.circle("fill", mouseX,mouseY,30)
+			    love.graphics.circle("fill", mouseX,mouseY,flashlightRad)
 			  end
 
 			  love.graphics.stencil(stencil,"replace",1)
@@ -317,20 +328,27 @@ function love.draw()
 			end
 
 
-				love.graphics.setStencilTest()
+		  local stencil = function()
+					love.graphics.rectangle("fill", newsFeedWidth+30, 10, window.w-newsFeedWidth-40, window.h/2-10)
+		  end
+		  love.graphics.stencil(stencil,"replace",1)
+		  love.graphics.setStencilTest("greater", 0)
 		 --love.graphics.print("Time "..Inspect(time2), newsFeedWidth+40, 20)
 		 for k=1,#mortals do
 			 mortals[k]:draw(0,motelYOffset)
 		 end
-		 --love.graphics.print(getDateTextFull(time2), newsFeedWidth+40, 20)
-		 love.graphics.print(getDateTextFull(time2).."           "..time2, newsFeedWidth+40, 20)
+
+
+		 	love.graphics.setStencilTest()
+		 love.graphics.print(getDateTextFull(time2), newsFeedWidth+40, 20)
+		--love.graphics.print(getDateTextFull(time2).."           "..time2, newsFeedWidth+40, 20)
 
 		 drawClock(window.w-130-100, 45, 30, getHours(time2),math.fmod(getHours(time2),1)*60,true)
 
 		 if(debug)then
 		 	love.graphics.print(string.format("$%.2f (%f evil)",money,evilPerc), newsFeedWidth+40, 40)
 		else
-		 	love.graphics.print(string.format("$%.2f",money), newsFeedWidth+40, 40)
+		 	love.graphics.print(string.format("$%.2f %f",money,time2), newsFeedWidth+40, 40)
 	 	end
 		if(hasAppeared("No AC") or debug)then
 			love.graphics.print(string.format("Number of occupants %d of %d (Temp %fC)",howManyMortalsStaying(),getRoomNo(),getTemperature()), newsFeedWidth+40, 60)
@@ -376,7 +394,7 @@ function love.draw()
 
 		--experimentShader:send("t",time)
 		love.graphics.setFont(fontDefault)
-		if(debug==true)then love.graphics.print("time to next mortal: "..mortalTime.." vs t: "..time2.."\n"..shadowYMax.."\n"..Inspect(shadows),1200,100) end
+		--if(debug==true)then love.graphics.print("time to next mortal: "..mortalTime.." vs t: "..time2.."\n"..shadowYMax.."\n"..Inspect(shadows),1200,100) end
 
 		love.graphics.setFont(fontSpooky)
 
@@ -433,16 +451,19 @@ function love.draw()
 	else
 	 love.graphics.draw(otherImgs.cursors.default, mouseX, mouseY, 0, 1, 1, 0,0)
 	end
+
+	--love.graphics.print(Inspect(mortalTypes),400,100)
 end
 
 function togglePause()
+	--saveData()
 	if(paused==true)then paused=false pauseIcon="❚❚" else paused=true pauseIcon="▶" end
 end
 
 cursorState=nil
 function love.mousepressed(x, y, button, isTouch)
 	if(inGame)then
-		if(button==1)then
+		if(button==1 or button==2)then
 			if(inBox(mouseX,mouseY,-5,-5,newsFeedWidth,50))then newsFeedYOffset=0 end
 			checkUpgradesCol(upgradesXPos,upgradesYPos,upgradesYOffset,upgradesWidth, window.h/2-40,fontCharWidth,fontCharHeight,mouseX,mouseY)
 			checkCustomersCol(customersXPos,customersYPos,customersYOffset,upgradesWidth, window.h/2-40,fontCharWidth,fontCharHeight,mouseX,mouseY)
@@ -482,21 +503,22 @@ end
 loadDataOnFrameEnd=false
 function love.keypressed(key, scancode, isrepeat)
 	if(key=="f9")then loadDataOnFrameEnd=true
+	elseif(key=="f10") then resetData() love.load()
 	elseif(key=="f5") then saveData() end
 	if(inGame)then
 		if(key=="r")then
-			love.load()
+			--love.load()
 		elseif(key=="a")then
 			evilPercAdd(0.1)
 		elseif(key=="q")then
-			inspectPlayer=true
-			if(debug==false) then debug=true money=money+1000000 else debug=false end
+			--inspectPlayer=true
+			--if(debug==false) then debug=true money=money+1000000 else debug=false end
 		elseif(key=="1")then
-			newMortal("normal")
+			--newMortal("normal")
 		elseif(key=="2")then
-			newMortal("cop")
+			--newMortal("cop")
 		elseif(key=="3")then
-			newMortal("murderer")
+			--newMortal("murderer")
 		elseif(key=="up")then
 				--checkScrollUp()
  			 checkScroll(5)
@@ -506,7 +528,7 @@ function love.keypressed(key, scancode, isrepeat)
 		elseif(key=="space")then
 			togglePause()
 		elseif(key=="f")then
-			addInvestigationProgress(0.05);
+			--addInvestigationProgress(0.05);
 		end
 	else
 		--menu

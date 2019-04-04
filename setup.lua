@@ -7,10 +7,10 @@ vector = require "lib.hump.vector"
 
 --setup window and game world size
 window={}
---window.w=800
---window.h=650
 window.w=0
 window.h=0
+--window.w=0
+--window.h=0
 game={}
 game.w=4000
 game.h=650
@@ -129,6 +129,12 @@ time=0
 
 --setup images
 imgs={}
+imgs.menuPraiseDecal1=love.graphics.newImage("res/menuPraiseDecal1.png")
+imgs.menuPraiseDecal2=love.graphics.newImage("res/menuPraiseDecal2.png")
+imgs.menuPraiseDecal3=love.graphics.newImage("res/menuPraiseDecal3.png")
+imgs.menuPraiseDecal4=love.graphics.newImage("res/menuPraiseDecal4.png")
+imgs.menuPraiseDecal5=love.graphics.newImage("res/menuPraiseDecal5.png")
+imgs.menuPraiseDecal6=love.graphics.newImage("res/menuPraiseDecal6.png")
 
 for i,img in ipairs(imgs) do
   img:setFilter('nearest', 'nearest')

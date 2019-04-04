@@ -1,7 +1,10 @@
 time2=0
+
 --dayLen=10000
 --dayLen=1000
 dayLen=6000
+--time2=(dayLen*7*4)-400
+
 
 function getHours(timeToGet)
   local time3=timeToGet

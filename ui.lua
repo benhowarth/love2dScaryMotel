@@ -94,16 +94,24 @@ function checkCustomersCol(x,y,yOffset,w,h,fW,fH,x1,y1)
       local h=customersToAdmit[n]:printCustomer(fW,fH,x,y+customersHeight+yOffset,w)
       if(inBox(x1,y1,x+10,y+customersHeight+yOffset,w,h))then
         --love.window.showMessageBox("yo", Inspect(customersToAdmit[n]), "info", true)
-        if(cursorState~="assignRoom" or n~=customerSelected)then
-          cursorState="assignRoom"
-          mortalSelected=customersToAdmit[n].id
-          customerSelected=n
-        else
+        --left click
+        if(love.mouse.isDown(1))then
+          if(cursorState~="assignRoom" or n~=customerSelected)then
+            cursorState="assignRoom"
+            mortalSelected=customersToAdmit[n].id
+            customerSelected=n
+          else
+            cursorState=nil
+            mortalSelected=nil
+            customerSelected=nil
+          end
+        --right click)
+      elseif(love.mouse.isDown(2))then
           cursorState=nil
           mortalSelected=nil
           customerSelected=nil
+          activateCustomer(customersToAdmit[n].id)
         end
-        --activateCustomer(customersToAdmit[n].id)
       end
       customersHeight=customersHeight+h+10
     end
@@ -117,7 +125,7 @@ function getAvgRating()
       rating=((rating*(n-1))+newsFeed[n].rating)/n
     end
   end
-  if((not gameEnd) and rating<1)then
+  if((not gameEnd) and rating<1.5)then
     newNewsStory("Motel fails","Motel ratings plummet as it's forced to shut down.")
     gameOver()
   end
@@ -169,12 +177,14 @@ checkNewsStories=function()
 end
 newsFeedSpeed=0.05
 NewsStory=Class{
-  init=function(self,title,body,newsFeedAmount)
+  init=function(self,title,body,newsFeedAmount,isEmail)
     self.title=title
     self.body=body
     self.date=time2
     self.newsFeedAmount=newsFeedAmount
     self.heightMult=0
+    self.read=false
+    if(isEmail==nil)then self.isEmail=false else self.isEmail=isEmail end
   end;
   getDateText=function(self)
     return string.format(self.date/100).."s"
@@ -196,12 +206,23 @@ NewsStory=Class{
     love.graphics.stencil(stencil,"replace",1)
     love.graphics.setStencilTest("greater", 0)
 
+
     love.graphics.setColor(0,0,0,255)
     love.graphics.rectangle("fill", x, y, w, h+fH*2)
     love.graphics.setColor(255,255,255,255)
 
 
-    love.graphics.rectangle("fill", x+10, y+10, reviewPicWidth, reviewPicHeight)
+    love.graphics.rectangle("line", x+10, y+10, reviewPicWidth, reviewPicHeight)
+    --draw newsstory icon
+    if(not self.isEmail)then
+      love.graphics.draw(otherImgs.icons.newsIcon,x+10,y+10)
+    else
+      if(self.read)then
+        love.graphics.draw(otherImgs.icons.openedEmailIcon,x+10,y+10)
+      else
+        love.graphics.draw(otherImgs.icons.unopenedEmailIcon,x+10,y+10)
+      end
+    end
     drawTextInBox(self.title,fW,fH,x+reviewPicWidth+20,y+10,w-reviewPicWidth-20,h)
     love.graphics.line(x+reviewPicWidth+20,y+30, w-10,y+30)
     love.graphics.print(getDateText(self.date),x+10,y+reviewPicHeight+40)
@@ -209,16 +230,35 @@ NewsStory=Class{
     love.graphics.print(getDateText(self.date),x+10,y+reviewPicHeight+40)
 
 
+    local mX=love.mouse.getX()
+    local mY=love.mouse.getY()
+
+    if(inBox(mX,mY,x,y,w,h) and self.heightMult>=1)then
+      if(not self.read)then self.read=true end
+    end
+
+    if(self.read)then
+      love.graphics.setColor(255,255,255,255)
+    else
+      love.graphics.setColor(255,0,0,255)
+    end
     love.graphics.rectangle("line", x, y, w, h+fH*2)
 
     love.graphics.setStencilTest()
     return h+35
   end;
 }
+newEmail=function(title,body,newsFeedAmount)
+  if(newsFeedAmount~=nil)then
+    newsStoriesToAdd[#newsStoriesToAdd+1]=NewsStory(title,body,newsFeedAmount,true)
+  else
+    addToNewsFeed(NewsStory(title,body,nil,true))
+  end
+end
 newNewsStory=function(title,body,newsFeedAmount)
   if(newsFeedAmount~=nil)then
-    newsStoriesToAdd[#newsStoriesToAdd+1]=NewsStory(title,body,newsFeedAmount)
+    newsStoriesToAdd[#newsStoriesToAdd+1]=NewsStory(title,body,newsFeedAmount,false)
   else
-    addToNewsFeed(NewsStory(title,body,nil))
+    addToNewsFeed(NewsStory(title,body,nil,false))
   end
 end
